@@ -22,7 +22,7 @@ const client = new OpenAI({
 // TEST MODE:
 // true  = hindi tatawag sa OpenAI API
 // false = tunay na AIWolf / OpenAI response
-const AIWOLF_TEST_MODE = true;
+const AIWOLF_TEST_MODE = false;
 
 // Maximum AIWolf requests per visitor
 const AIWOLF_LIMIT = 10;
