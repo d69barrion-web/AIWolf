@@ -1,3 +1,4 @@
+```javascript
 import express from "express";
 import cors from "cors";
 import OpenAI from "openai";
@@ -6,6 +7,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
 
 /*
 ==================================================
@@ -16,6 +18,135 @@ OPENAI CLIENT
 const client = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
+
+
+/*
+==================================================
+AIWOLF RATE LIMITER
+==================================================
+
+10 questions per 10 minutes per visitor/IP.
+
+The counter is stored in server memory.
+It resets when the Render service restarts/redeploys.
+
+==================================================
+*/
+
+const AIWOLF_LIMIT = 10;
+const AIWOLF_WINDOW = 10 * 60 * 1000; // 10 minutes
+
+const aiWolfVisitors = new Map();
+
+
+function getVisitorIP(req) {
+
+    /*
+    Render/proxy may provide the original client IP
+    through x-forwarded-for.
+
+    We use the first IP in the list.
+    */
+
+    const forwarded =
+        req.headers["x-forwarded-for"];
+
+    if (forwarded) {
+
+        return forwarded
+            .split(",")[0]
+            .trim();
+
+    }
+
+    return req.socket.remoteAddress ||
+        "unknown";
+
+}
+
+
+function checkAIWolfRateLimit(req) {
+
+    const ip =
+        getVisitorIP(req);
+
+    const now =
+        Date.now();
+
+    let visitor =
+        aiWolfVisitors.get(ip);
+
+
+    /*
+    ------------------------------------------
+    FIRST REQUEST / EXPIRED WINDOW
+    ------------------------------------------
+    */
+
+    if (
+        !visitor ||
+        now - visitor.startTime >= AIWOLF_WINDOW
+    ) {
+
+        visitor = {
+
+            startTime: now,
+            count: 0
+
+        };
+
+    }
+
+
+    /*
+    ------------------------------------------
+    CHECK LIMIT
+    ------------------------------------------
+    */
+
+    if (visitor.count >= AIWOLF_LIMIT) {
+
+        const remainingTime =
+            AIWOLF_WINDOW -
+            (now - visitor.startTime);
+
+        return {
+
+            allowed: false,
+            retryAfter:
+                Math.ceil(
+                    remainingTime / 1000
+                )
+
+        };
+
+    }
+
+
+    /*
+    ------------------------------------------
+    COUNT REQUEST
+    ------------------------------------------
+    */
+
+    visitor.count++;
+
+    aiWolfVisitors.set(
+        ip,
+        visitor
+    );
+
+
+    return {
+
+        allowed: true,
+        remaining:
+            AIWOLF_LIMIT -
+            visitor.count
+
+    };
+
+}
 
 
 /*
@@ -204,6 +335,33 @@ app.post("/api/aiwolf", async (req, res) => {
 
     try {
 
+        /*
+        ------------------------------------------
+        RATE LIMIT CHECK
+        ------------------------------------------
+        */
+
+        const rateLimit =
+            checkAIWolfRateLimit(req);
+
+
+        if (!rateLimit.allowed) {
+
+            return res
+                .status(429)
+                .json({
+
+                    error:
+                        "AIWolf usage limit reached. Please try again later.",
+
+                    retryAfter:
+                        rateLimit.retryAfter
+
+                });
+
+        }
+
+
         const {
             question,
             chapter,
@@ -320,14 +478,21 @@ Huwag mag-imbento ng chapter content.
 
         res.json({
 
-            reply: response.output_text
+            reply:
+                response.output_text,
+
+            remaining:
+                rateLimit.remaining
 
         });
 
 
     } catch (error) {
 
-        console.error("AIWolf error:", error);
+        console.error(
+            "AIWolf error:",
+            error
+        );
 
 
         /*
@@ -389,7 +554,8 @@ app.post("/chat", async (req, res) => {
 
         res.json({
 
-            reply: response.output_text
+            reply:
+                response.output_text
 
         });
 
@@ -436,3 +602,4 @@ app.listen(
 
     }
 );
+```
