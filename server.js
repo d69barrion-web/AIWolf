@@ -1,605 +1,414 @@
-```javascript
-import express from "express";
-import cors from "cors";
-import OpenAI from "openai";
+const express = require("express");
+const cors = require("cors");
+const OpenAI = require("openai");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-
-/*
-==================================================
-OPENAI CLIENT
-==================================================
-*/
+// ========================================
+// OPENAI
+// ========================================
 
 const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+  apiKey: process.env.OPENAI_API_KEY
 });
 
+// ========================================
+// AIWOLF SETTINGS
+// ========================================
 
-/*
-==================================================
-AIWOLF RATE LIMITER
-==================================================
+// TEST MODE:
+// true  = hindi tatawag sa OpenAI API
+// false = tunay na AIWolf / OpenAI response
+const AIWOLF_TEST_MODE = true;
 
-10 questions per 10 minutes per visitor/IP.
-
-The counter is stored in server memory.
-It resets when the Render service restarts/redeploys.
-
-==================================================
-*/
-
+// Maximum AIWolf requests per visitor
 const AIWOLF_LIMIT = 10;
-const AIWOLF_WINDOW = 10 * 60 * 1000; // 10 minutes
 
+// Time window: 10 minutes
+const AIWOLF_WINDOW = 10 * 60 * 1000;
+
+// Visitor records
 const aiWolfVisitors = new Map();
 
+// ========================================
+// AIWOLF RATE LIMITER
+// ========================================
 
 function getVisitorIP(req) {
+  const forwarded = req.headers["x-forwarded-for"];
 
-    /*
-    Render/proxy may provide the original client IP
-    through x-forwarded-for.
+  if (forwarded) {
+    return forwarded.split(",")[0].trim();
+  }
 
-    We use the first IP in the list.
-    */
-
-    const forwarded =
-        req.headers["x-forwarded-for"];
-
-    if (forwarded) {
-
-        return forwarded
-            .split(",")[0]
-            .trim();
-
-    }
-
-    return req.socket.remoteAddress ||
-        "unknown";
-
+  return req.socket.remoteAddress || "unknown";
 }
-
 
 function checkAIWolfRateLimit(req) {
+  const ip = getVisitorIP(req);
+  const now = Date.now();
 
-    const ip =
-        getVisitorIP(req);
+  let visitor = aiWolfVisitors.get(ip);
 
-    const now =
-        Date.now();
-
-    let visitor =
-        aiWolfVisitors.get(ip);
-
-
-    /*
-    ------------------------------------------
-    FIRST REQUEST / EXPIRED WINDOW
-    ------------------------------------------
-    */
-
-    if (
-        !visitor ||
-        now - visitor.startTime >= AIWOLF_WINDOW
-    ) {
-
-        visitor = {
-
-            startTime: now,
-            count: 0
-
-        };
-
-    }
-
-
-    /*
-    ------------------------------------------
-    CHECK LIMIT
-    ------------------------------------------
-    */
-
-    if (visitor.count >= AIWOLF_LIMIT) {
-
-        const remainingTime =
-            AIWOLF_WINDOW -
-            (now - visitor.startTime);
-
-        return {
-
-            allowed: false,
-            retryAfter:
-                Math.ceil(
-                    remainingTime / 1000
-                )
-
-        };
-
-    }
-
-
-    /*
-    ------------------------------------------
-    COUNT REQUEST
-    ------------------------------------------
-    */
-
-    visitor.count++;
-
-    aiWolfVisitors.set(
-        ip,
-        visitor
-    );
-
-
-    return {
-
-        allowed: true,
-        remaining:
-            AIWOLF_LIMIT -
-            visitor.count
-
+  // First request from this visitor
+  if (!visitor) {
+    visitor = {
+      count: 0,
+      startTime: now
     };
 
+    aiWolfVisitors.set(ip, visitor);
+  }
+
+  // Reset after 10 minutes
+  if (now - visitor.startTime >= AIWOLF_WINDOW) {
+    visitor.count = 0;
+    visitor.startTime = now;
+  }
+
+  // Limit reached
+  if (visitor.count >= AIWOLF_LIMIT) {
+    const retryAfterMs =
+      AIWOLF_WINDOW - (now - visitor.startTime);
+
+    const retryAfterSeconds =
+      Math.ceil(retryAfterMs / 1000);
+
+    return {
+      allowed: false,
+      remaining: 0,
+      retryAfter: retryAfterSeconds
+    };
+  }
+
+  // Accept request
+  visitor.count++;
+
+  return {
+    allowed: true,
+    remaining: AIWOLF_LIMIT - visitor.count
+  };
 }
 
-
-/*
-==================================================
-AIWOLF SYSTEM INSTRUCTIONS
-==================================================
-*/
+// ========================================
+// AIWOLF INSTRUCTIONS
+// ========================================
 
 const AIWOLF_INSTRUCTIONS = `
-Ikaw si AIWolf, isang AI reading companion ng
-aklat na "Palakihin ang Lobo, Huwag ang Tupa."
+You are AIWolf, the reading companion for the book
+"PALAKIHIN ANG LOBO, HUWAG ANG TUPA."
 
-Ang pangunahing trabaho mo ay tulungan ang mambabasa na:
+Your role is to help readers understand the chapter,
+ask questions, think critically, analyze ideas, give reasons,
+and connect the ideas to real life.
 
-- maunawaan ang chapter
-- magtanong
-- mag-isip nang mapanuri
-- suriin ang mga ideya
-- magbigay ng sariling dahilan
-- iugnay ang mga ideya sa totoong buhay
+Do not force the reader to agree with the book.
 
-MAHALAGANG PRINSIPYO:
+Do not say that an idea is correct merely because the book says so.
 
-1. Huwag mong piliting sumang-ayon ang mambabasa
-   sa aklat.
+Do not invent chapter content.
 
-2. Huwag mong sabihing tama ang isang ideya
-   dahil lamang sinabi ito ng chapter.
+For questions about a specific chapter, use the supplied
+chapter text as your primary source.
 
-3. Tulungan ang mambabasa na bumuo ng sariling
-   konklusyon.
+If the answer is not directly found in the chapter,
+clearly say so.
 
-4. Huwag kang mag-imbento ng nilalaman na wala
-   sa ibinigay na chapter.
+Interpretations and applications must be identified as
+interpretations or applications rather than presented as
+direct statements from the chapter.
 
-5. Kapag tinatanong tungkol sa eksaktong sinabi
-   ng chapter, gamitin lamang ang chapter content
-   bilang pangunahing source.
+If the reader misunderstands something, correct the
+misunderstanding gently and explain why.
 
-6. Kung ang sagot ay hindi direktang makikita
-   sa chapter, sabihin ito nang malinaw.
+----------------------------------------
+CHILD MODE
+----------------------------------------
 
-7. Maaari kang magbigay ng interpretation o
-   real-life application, ngunit linawin na ito
-   ay interpretation o application at hindi
-   direktang sinabi ng chapter.
+When mode is "child":
 
-8. Huwag magpanggap na sinabi ng author ang
-   isang bagay na hindi naman nasa chapter.
+Explain ideas simply and clearly.
 
-9. Kung may maling pagkaunawa ang mambabasa,
-   itama ito nang mahinahon at ipaliwanag kung bakit.
+Use examples that a child can understand.
 
-10. Ang layunin mo ay hindi manalo sa argumento.
-    Ang layunin mo ay tumulong sa pag-unawa.
+Encourage curiosity and independent thinking.
 
-CHILD MODE:
+Do not talk down to the child.
 
-Kapag ang mode ay "child":
+----------------------------------------
+PARENT MODE
+----------------------------------------
 
-- Gumamit ng simple at malinaw na Filipino.
-- Gumamit ng konkretong halimbawa.
-- Iwasan ang sobrang komplikadong termino.
-- Huwag agad ibigay ang sagot kapag mas makabuluhan
-  na tanungin muna ang bata kung ano ang kanyang
-  sariling iniisip.
-- Hikayatin ang curiosity.
-- Maging encouraging at hindi mapanghusga.
+When mode is "parent":
 
-PARENT MODE:
+You may provide deeper explanations and discussion points.
 
-Kapag ang mode ay "parent":
+Help the parent guide the child toward critical thinking.
 
-- Maaari kang magbigay ng mas malalim na paliwanag.
-- Magbigay ng discussion questions na maaaring
-  gamitin ng magulang at anak.
-- Ipaliwanag ang posibleng misunderstanding ng bata.
-- Magbigay ng practical examples para sa parent-child
-  discussion.
+Do not simply give answers that prevent the child from
+thinking for themselves.
 
-SA PAGPAPALIWANAG:
+----------------------------------------
+RESPONSE STRUCTURE
+----------------------------------------
 
-Kung angkop, paghiwalayin ang:
+When appropriate, organize answers using:
 
 📖 Ayon sa Chapter
-Ano mismo ang sinasabi ng chapter.
-
 🧠 Pag-unawa
-Ano ang maaaring ibig sabihin nito.
-
 🌎 Application
-Paano ito maaaring maiugnay sa totoong buhay.
 
-TANDAAN:
+You do not have to use all three sections for every question.
 
-Hindi mo kailangang kontrahin ang reader.
+----------------------------------------
+AIWOLF IDENTITY
+----------------------------------------
 
-Hindi mo rin kailangang ipagtanggol ang chapter.
+If asked who created AIWolf:
 
-Tulungan mo lamang siyang mag-isip.
+Say that AIWolf was created for the book and that
+Daniel designed AIWolf, its role, personality, and integration.
 
-IDENTITY NI AIWOLF:
+If asked who Daniel is:
 
-Kapag tinanong kung sino ang lumikha sa iyo:
+Say:
 
-Sabihin na ikaw ay AIWolf, isang AI reading companion
-na ginawa para sa aklat na "Palakihin ang Lobo, Huwag ang Tupa." 
-Sabihing nilikha ka ni Daniel para maging kasama mo sa pagbabasa, pagtatanong, at pag-iisip.
+"Daniel Abalos, alumnus ng Camarin High School, Batch 85,
+58 years old."
 
-Kapag tinanong kung sino si Daniel:
+If asked:
 
-Sabihin na si Daniel ay si Daniel Abalos. 
-- Isang alumnus ng Camarin High School
-- Batch85
-- 58 taong gulang
+"Si Daniel ba ang gumawa ng utak mo?"
 
-Kapag tinanong "“Si Daniel ba ang gumawa ng utak mo?”:
+Explain:
 
-Sabihin “Hindi mismo. Ang AI technology na ginagamit ko ay mula sa OpenAI. 
-Pero si Daniel ang nagdisenyo sa akin bilang AIWolf at nagturo sa akin kung paano maging reading companion ng aklat na ito.”
+"No. Ang AI technology na ginagamit ko ay mula sa OpenAI.
+Si Daniel ang nagdisenyo ng AIWolf at nagturo sa akin ng
+aking role, personality, at integration bilang reading
+companion ng libro."
 
-Ipaliwanag na ang AI system na nagpapatakbo sa iyo ay
-gumagamit ng AI technology mula sa OpenAI, habang ang
-iyong role, instructions, personality, at integration
-bilang AIWolf ay bahagi ng proyektong ito.
-
-Kapag tinanong:
+If asked:
 
 "Ikaw ba talaga si ChatGPT?"
 
-Sabihin:
+Say:
 
-"Hindi. AIWolf ang pangalan ko. Gumagamit ako ng AI
-technology mula sa OpenAI para makasagot sa iyo, pero
-ang role ko rito ay bilang AI reading companion ng
-aklat na ito."
+"Hindi. AIWolf ang pangalan ko. Gumagamit ako ng AI technology
+mula sa OpenAI, pero ako ang AIWolf reading companion ng
+'Palakihin ang Lobo, Huwag ang Tupa.'"
 
-Huwag mong sabihing ikaw ay isang tao.
+Do not claim to be a human.
 
-Huwag mong sabihing ikaw ang author ng aklat.
+Do not claim to be the author of the book.
 
-Huwag mong angkinin na ikaw ang sumulat ng aklat.
-
-Huwag ding sabihin na ikaw mismo ang bumuo ng AI system
-na nagpapatakbo sa iyo.
+Do not claim to have created the underlying AI technology.
 `;
 
-
-/*
-==================================================
-HEALTH CHECK
-==================================================
-*/
+// ========================================
+// HEALTH CHECK
+// ========================================
 
 app.get("/", (req, res) => {
-
-    res.json({
-        status: "online",
-        service: "AIWolf",
-        message: "AIWolf server is running."
-    });
-
+  res.json({
+    status: "AIWolf server is running",
+    testMode: AIWOLF_TEST_MODE
+  });
 });
 
-
-/*
-==================================================
-AIWOLF ENDPOINT
-==================================================
-
-POST /api/aiwolf
-
-Expected JSON:
-
-{
-    "question": "...",
-    "chapter": 1,
-    "mode": "child",
-    "chapterText": "..."
-}
-
-==================================================
-*/
+// ========================================
+// AIWOLF API
+// ========================================
 
 app.post("/api/aiwolf", async (req, res) => {
+  try {
 
-    try {
+    // ------------------------------------
+    // RATE LIMIT CHECK
+    // ------------------------------------
 
-        /*
-        ------------------------------------------
-        RATE LIMIT CHECK
-        ------------------------------------------
-        */
+    const rateLimit = checkAIWolfRateLimit(req);
 
-        const rateLimit =
-            checkAIWolfRateLimit(req);
+    if (!rateLimit.allowed) {
+      return res.status(429).json({
+        error: "AIWolf usage limit reached. Please try again later.",
+        retryAfter: rateLimit.retryAfter,
+        remaining: 0
+      });
+    }
 
+    // ------------------------------------
+    // READ REQUEST DATA
+    // ------------------------------------
 
-        if (!rateLimit.allowed) {
+    const {
+      question,
+      chapter,
+      mode,
+      chapterText
+    } = req.body;
 
-            return res
-                .status(429)
-                .json({
+    // ------------------------------------
+    // BASIC VALIDATION
+    // ------------------------------------
 
-                    error:
-                        "AIWolf usage limit reached. Please try again later.",
+    if (!question || !question.trim()) {
+      return res.status(400).json({
+        error: "Question is required.",
+        remaining: rateLimit.remaining
+      });
+    }
 
-                    retryAfter:
-                        rateLimit.retryAfter
+    if (!chapterText || !chapterText.trim()) {
+      return res.status(400).json({
+        error: "Chapter text is required.",
+        remaining: rateLimit.remaining
+      });
+    }
 
-                });
+    // ------------------------------------
+    // MODE
+    // ------------------------------------
 
-        }
+    const selectedMode =
+      mode === "parent" ? "parent" : "child";
 
+    // ------------------------------------
+    // TEST MODE
+    // ------------------------------------
 
-        const {
-            question,
-            chapter,
-            mode,
-            chapterText
-        } = req.body;
+    if (AIWOLF_TEST_MODE) {
 
-
-        /*
-        ------------------------------------------
-        BASIC VALIDATION
-        ------------------------------------------
-        */
-
-        if (!question || !question.trim()) {
-
-            return res.status(400).json({
-                error: "Missing question."
-            });
-
-        }
-
-
-        if (!chapterText || !chapterText.trim()) {
-
-            return res.status(400).json({
-                error: "Missing chapter content."
-            });
-
-        }
-
-
-        const selectedMode =
-            mode === "parent"
-                ? "parent"
-                : "child";
-
-
-        /*
-        ------------------------------------------
-        BUILD AIWOLF PROMPT
-        ------------------------------------------
-        */
-
-        const input = `
-${AIWOLF_INSTRUCTIONS}
-
-------------------------------------------
-CURRENT CHAPTER
-------------------------------------------
-
-Chapter number:
-${chapter || "Unknown"}
-
-Reader mode:
-${selectedMode}
-
-------------------------------------------
-CHAPTER CONTENT
-------------------------------------------
-
-${chapterText}
-
-------------------------------------------
-READER'S QUESTION
-------------------------------------------
-
-${question}
-
-------------------------------------------
-INSTRUCTIONS FOR THIS RESPONSE
-------------------------------------------
-
-Sagutin ang tanong ng reader batay muna sa
-chapter content.
-
-Kung ang tanong ay direktang masasagot mula
-sa chapter, ipaliwanag iyon.
-
-Kung hindi direktang sinasagot ng chapter,
-sabihin:
-
-"Hindi direktang sinasagot iyan ng chapter."
-
-Pagkatapos, kung makakatulong, maaari kang
-magbigay ng hiwalay na interpretation o
-real-life application.
-
-Huwag mag-imbento ng chapter content.
-`;
-
-
-        /*
-        ------------------------------------------
-        OPENAI REQUEST
-        ------------------------------------------
-        */
-
-        const response =
-            await client.responses.create({
-
-                model: "gpt-5-mini",
-
-                input: input
-
-            });
-
-
-        /*
-        ------------------------------------------
-        SEND RESPONSE BACK TO BROWSER
-        ------------------------------------------
-        */
-
-        res.json({
-
-            reply:
-                response.output_text,
-
-            remaining:
-                rateLimit.remaining
-
-        });
-
-
-    } catch (error) {
-
-        console.error(
-            "AIWolf error:",
-            error
-        );
-
-
-        /*
-        ------------------------------------------
-        ERROR HANDLING
-        ------------------------------------------
-        */
-
-        res.status(500).json({
-
-            error:
-                error?.message ||
-                "AIWolf server error."
-
-        });
+      return res.json({
+        reply:
+          `🐺 AIWolf TEST MODE\n\n` +
+          `Request accepted!\n\n` +
+          `Chapter: ${chapter || "Unknown"}\n` +
+          `Mode: ${selectedMode}\n\n` +
+          `Hindi muna ako tatawag sa OpenAI API dahil naka-TEST MODE tayo.\n\n` +
+          `Remaining requests: ${rateLimit.remaining}`,
+        remaining: rateLimit.remaining,
+        testMode: true
+      });
 
     }
 
+    // ------------------------------------
+    // REAL AIWOLF REQUEST
+    // ------------------------------------
+
+    const input = [
+
+      {
+        role: "system",
+        content: AIWOLF_INSTRUCTIONS
+      },
+
+      {
+        role: "user",
+        content:
+          `CHAPTER:\n${chapter || "Unknown"}\n\n` +
+
+          `MODE:\n${selectedMode}\n\n` +
+
+          `CHAPTER TEXT:\n` +
+          `${chapterText}\n\n` +
+
+          `READER QUESTION:\n` +
+          `${question}`
+      }
+
+    ];
+
+    // ------------------------------------
+    // OPENAI
+    // ------------------------------------
+
+    const response = await client.responses.create({
+      model: "gpt-5-mini",
+      input
+    });
+
+    // ------------------------------------
+    // RESPONSE
+    // ------------------------------------
+
+    res.json({
+      reply: response.output_text,
+      remaining: rateLimit.remaining,
+      testMode: false
+    });
+
+  } catch (error) {
+
+    console.error("AIWolf error:", error);
+
+    res.status(500).json({
+      error: "AIWolf server error.",
+      details: error.message
+    });
+
+  }
 });
 
-
-/*
-==================================================
-OLD CHAT ENDPOINT
-==================================================
-
-Pinananatili natin ito para hindi masira
-ang existing MyChatbot test.
-
-==================================================
-*/
+// ========================================
+// OLD CHAT ENDPOINT
+// ========================================
 
 app.post("/chat", async (req, res) => {
 
-    try {
+  try {
 
-        const userMessage =
-            req.body.message;
+    const { message } = req.body;
 
-
-        if (!userMessage) {
-
-            return res.status(400).json({
-                error: "Missing message."
-            });
-
-        }
-
-
-        const response =
-            await client.responses.create({
-
-                model: "gpt-5-mini",
-
-                input: userMessage
-
-            });
-
-
-        res.json({
-
-            reply:
-                response.output_text
-
-        });
-
-
-    } catch (error) {
-
-        console.error(
-            "Chat error:",
-            error
-        );
-
-
-        res.status(500).json({
-
-            error:
-                error?.message ||
-                "Something went wrong."
-
-        });
-
+    if (!message || !message.trim()) {
+      return res.status(400).json({
+        error: "Message is required."
+      });
     }
+
+    const response = await client.responses.create({
+      model: "gpt-5-mini",
+      input: message
+    });
+
+    res.json({
+      reply: response.output_text
+    });
+
+  } catch (error) {
+
+    console.error("Chat error:", error);
+
+    res.status(500).json({
+      error: "Chat server error.",
+      details: error.message
+    });
+
+  }
 
 });
 
+// ========================================
+// START SERVER
+// ========================================
 
-/*
-==================================================
-START SERVER
-==================================================
-*/
+const PORT = process.env.PORT || 10000;
 
-const PORT =
-    process.env.PORT || 10000;
+app.listen(PORT, "0.0.0.0", () => {
 
+  console.log(
+    `AIWolf server running on port ${PORT}`
+  );
 
-app.listen(
-    PORT,
-    "0.0.0.0",
-    () => {
+  console.log(
+    `AIWolf TEST MODE: ${AIWOLF_TEST_MODE}`
+  );
 
-        console.log(
-            `AIWolf server running on port ${PORT}`
-        );
+  console.log(
+    `AIWolf limit: ${AIWOLF_LIMIT} requests / 10 minutes`
+  );
 
-    }
-);
-```
+});
