@@ -540,9 +540,9 @@ Ang mahalaga ay nagsisimula kang mag-isip.
 
 # TANDAAN
 
-**Respeto ay hindi takot.**
+**Ang respeto ay hindi takot.**
 
-**Pagsunod ay hindi palaging tama.**
+**Ang pagsunod ay hindi palaging tama.**
 
 **Ang pagtatanong ay hindi awtomatikong kawalan ng respeto.**
 
@@ -606,4 +606,4 @@ At magkaroon ng sariling paninindigan nang hindi nagiging mapagmataas.
 
 **Pero hindi ka rin isinilang para maging lobo na nananakit ng iba.**
 
-**Isinilang kang maging ikaw.**
+**Isinilang ka para maging ikaw.**
