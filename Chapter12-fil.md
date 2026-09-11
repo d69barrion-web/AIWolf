@@ -221,7 +221,7 @@ Pero magkaiba ang paraan ng pagpapakita ng respeto.
 
 ---
 
-# HINDI MO KAILANGANG MANLIT SA PAGKAKAMALI NG IBA
+# HINDI MO KAILANGANG MANLAIT SA PAGKAKAMALI NG IBA
 
 May isa pang mahalagang bagay.
 
