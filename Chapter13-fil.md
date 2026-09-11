@@ -467,7 +467,7 @@ Hindi lahat ng tao ay kailangang sumang-ayon sa buhay na pinili mo.
 
 ---
 
-# PERO HUWAG MO RING ISARA ANG IYONG MGA TAinga
+# PERO HUWAG MO RING ISARA ANG IYONG MGA TAINGA
 
 May isang babala.
 
