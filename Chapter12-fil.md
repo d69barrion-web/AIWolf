@@ -415,7 +415,7 @@ Minsan, iyon ang tawag sa **paninindigan.**
 
 ---
 
-# HUMILITY AY HINDI SURRENDER
+# ANG HUMILITY AY HINDI SURRENDER
 
 May mga taong natatakot na kapag nagkaroon sila ng sariling opinyon, magiging mayabang sila.
 
