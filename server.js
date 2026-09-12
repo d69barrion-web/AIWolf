@@ -469,4 +469,3 @@ app.listen(PORT, "0.0.0.0", () => {
 
   console.log("Firebase Admin: connected");
 });
-```
