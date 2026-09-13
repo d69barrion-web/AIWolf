@@ -389,7 +389,6 @@ app.post("/api/parent/children", requireFirebaseUser, async (req, res) => {
   }
 });
 
-
 // LIST CHILD PROFILES FOR SIGNED-IN PARENT
 app.get("/api/parent/children", requireFirebaseUser, async (req, res) => {
   try {
@@ -414,6 +413,81 @@ app.get("/api/parent/children", requireFirebaseUser, async (req, res) => {
     });
   }
 });
+
+// SAVE ONE AIWOLF QUESTION + REPLY TO A CHILD'S CLOUD HISTORY
+app.post(
+  "/api/parent/children/:childId/conversations",
+  requireFirebaseUser,
+  async (req, res) => {
+    try {
+      const parentUid = req.firebaseUser.uid;
+      const childId = req.params.childId;
+
+      const chapter = Number(req.body.chapter);
+      const question =
+        typeof req.body.question === "string"
+          ? req.body.question.trim()
+          : "";
+      const reply =
+        typeof req.body.reply === "string"
+          ? req.body.reply.trim()
+          : "";
+
+      if (!Number.isInteger(chapter) || chapter < 1 || chapter > 100) {
+        return res.status(400).json({
+          error: "Invalid chapter number."
+        });
+      }
+
+      if (!question || question.length > 5000) {
+        return res.status(400).json({
+          error: "Question must be 1 to 5000 characters."
+        });
+      }
+
+      if (!reply || reply.length > 20000) {
+        return res.status(400).json({
+          error: "Reply must be 1 to 20000 characters."
+        });
+      }
+
+      // Verify that this child belongs to the signed-in parent.
+      const childRef = db
+        .collection("parents")
+        .doc(parentUid)
+        .collection("children")
+        .doc(childId);
+
+      const childSnapshot = await childRef.get();
+
+      if (!childSnapshot.exists) {
+        return res.status(404).json({
+          error: "Child profile not found."
+        });
+      }
+
+      const conversationRef = await childRef
+        .collection("conversations")
+        .add({
+          chapter,
+          question,
+          reply,
+          createdAt: new Date().toISOString()
+        });
+
+      return res.status(201).json({
+        ok: true,
+        conversationId: conversationRef.id
+      });
+    } catch (error) {
+      console.error("Save AIWolf conversation error:", error);
+
+      return res.status(500).json({
+        error: "Could not save the conversation."
+      });
+    }
+  }
+);
 
 // ========================================
 // AIWOLF API
