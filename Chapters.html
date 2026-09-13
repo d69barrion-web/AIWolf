@@ -998,6 +998,51 @@ function showParentSignedIn(user) {
     }
 }
 
+async function connectParentProfile(user) {
+    if (!user) return;
+
+    try {
+        setParentAuthStatus("Naka-sign in. Kinokonekta ang parent profile...");
+
+        const idToken = await user.getIdToken();
+
+        const response = await fetch(
+            "https://mychatbot-ct9m.onrender.com/api/parent/profile",
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${idToken}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({})
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(
+                data.error || "Hindi makakonekta sa parent profile."
+            );
+        }
+
+        setParentAuthStatus(
+            "Naka-sign in bilang: " +
+            (user.email || "Parent account") +
+            " — Parent profile connected."
+        );
+    } catch (error) {
+        console.error("Parent profile connection error:", error);
+
+        setParentAuthStatus(
+            "Naka-sign in bilang: " +
+            (user.email || "Parent account") +
+            " — Hindi pa nakakonekta ang profile: " +
+            error.message
+        );
+    }
+}
+
 async function parentSignUp() {
     if (!parentAuth) {
         setParentAuthStatus(
@@ -1031,7 +1076,8 @@ async function parentSignUp() {
             );
 
         showParentSignedIn(result.user);
-        document.getElementById("parentPassword").value = "";
+document.getElementById("parentPassword").value = "";
+await connectParentProfile(result.user);
     } catch (error) {
         setParentAuthStatus(
             "Hindi nagawa ang account: " + error.message
@@ -1065,7 +1111,8 @@ async function parentSignIn() {
             );
 
         showParentSignedIn(result.user);
-        document.getElementById("parentPassword").value = "";
+document.getElementById("parentPassword").value = "";
+await connectParentProfile(result.user);
     } catch (error) {
         setParentAuthStatus(
             "Hindi makapag-sign in: " + error.message
