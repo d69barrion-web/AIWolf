@@ -567,7 +567,76 @@ footer {
 
 }
 
+    /* =========================================
+   PARENT ACCOUNT
+========================================= */
+
+.parent-account {
+    margin: 18px 0;
+    padding: 16px;
+    background: #303030;
+    border: 1px solid #555;
+    border-radius: 10px;
+    font-family: Arial, sans-serif;
+}
+
+.parent-account h3 {
+    margin: 0 0 8px;
+    font-size: 18px;
+}
+
+.parent-account p {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.parent-account label {
+    display: block;
+    margin: 12px 0 5px;
+    font-size: 13px;
+}
+
+.parent-account input {
+    width: 100%;
+    min-width: 0;
+    padding: 11px;
+    border: 1px solid #777;
+    border-radius: 6px;
+    background: #fff;
+    color: #222;
+    font-size: 16px;
+}
+
+.parent-account-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.parent-account-buttons button {
+    padding: 10px 12px;
+    border: 0;
+    border-radius: 6px;
+    background: #555;
+    color: #fff;
+    cursor: pointer;
+}
+
+.parent-account-buttons button:hover {
+    background: #666;
+}
+
+.parent-account-note {
+    color: #ccc;
+    margin-bottom: 0;
+}
+
 </style>
+
+    <!-- Firebase Authentication (compat SDK) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 </head>
 
@@ -666,6 +735,54 @@ footer {
 
         </div>
 
+        <!-- PARENT ACCOUNT -->
+<div class="parent-account">
+    <h3>👨‍👩‍👧 Parent Account</h3>
+
+    <p id="parentAuthStatus">
+        Mag-sign in o gumawa ng parent account.
+    </p>
+
+    <label for="parentEmail">Email address</label>
+    <input
+        id="parentEmail"
+        type="email"
+        placeholder="your@email.com"
+        autocomplete="email"
+    >
+
+    <label for="parentPassword">Password</label>
+    <input
+        id="parentPassword"
+        type="password"
+        placeholder="At least 6 characters"
+        autocomplete="current-password"
+    >
+
+    <div class="parent-account-buttons">
+        <button type="button" onclick="parentSignUp()">
+            Create account
+        </button>
+
+        <button type="button" onclick="parentSignIn()">
+            Sign in
+        </button>
+
+        <button
+            type="button"
+            id="parentSignOutButton"
+            onclick="parentSignOut()"
+            hidden
+        >
+            Sign out
+        </button>
+    </div>
+
+    <p class="parent-account-note">
+        Parent account pa lamang ito. Hindi pa nakakabit ang child profiles
+        at cloud conversation history.
+    </p>
+</div>
 
         <!-- MODE -->
 
@@ -828,6 +945,172 @@ AIWolf mode
 
 let currentMode = "child";
 
+    /*
+==================================================
+FIREBASE PARENT AUTHENTICATION
+==================================================
+*/
+
+const firebaseConfig = {
+    apiKey: "AIzaSyA7dw8FdlLqMkxjl3oa3xcUZxhtow13kMk",
+    authDomain: "raise-a-wolf-not-a-sheep-8546e.firebaseapp.com",
+    projectId: "raise-a-wolf-not-a-sheep-8546e",
+    storageBucket: "raise-a-wolf-not-a-sheep-8546e.firebasestorage.app",
+    messagingSenderId: "694156521099",
+    appId: "1:694156521099:web:6383b03623b160886e2e8e",
+    measurementId: "G-RBL8QDPHZJ"
+};
+
+let parentAuth = null;
+
+function setParentAuthStatus(message) {
+    const status = document.getElementById("parentAuthStatus");
+
+    if (status) {
+        status.textContent = message;
+    }
+}
+
+function getParentEmail() {
+    return document.getElementById("parentEmail").value.trim();
+}
+
+function getParentPassword() {
+    return document.getElementById("parentPassword").value;
+}
+
+function showParentSignedIn(user) {
+    const signOutButton =
+        document.getElementById("parentSignOutButton");
+
+    if (user) {
+        setParentAuthStatus(
+            "Naka-sign in bilang: " + (user.email || "Parent account")
+        );
+
+        signOutButton.hidden = false;
+    } else {
+        setParentAuthStatus(
+            "Mag-sign in o gumawa ng parent account."
+        );
+
+        signOutButton.hidden = true;
+    }
+}
+
+async function parentSignUp() {
+    if (!parentAuth) {
+        setParentAuthStatus(
+            "Hindi pa handa ang Firebase. I-refresh ang page at subukan muli."
+        );
+        return;
+    }
+
+    const email = getParentEmail();
+    const password = getParentPassword();
+
+    if (!email || !password) {
+        setParentAuthStatus("Ilagay ang email at password.");
+        return;
+    }
+
+    if (password.length < 6) {
+        setParentAuthStatus(
+            "Dapat ay hindi bababa sa 6 na characters ang password."
+        );
+        return;
+    }
+
+    try {
+        setParentAuthStatus("Ginagawa ang parent account...");
+
+        const result =
+            await parentAuth.createUserWithEmailAndPassword(
+                email,
+                password
+            );
+
+        showParentSignedIn(result.user);
+        document.getElementById("parentPassword").value = "";
+    } catch (error) {
+        setParentAuthStatus(
+            "Hindi nagawa ang account: " + error.message
+        );
+    }
+}
+
+async function parentSignIn() {
+    if (!parentAuth) {
+        setParentAuthStatus(
+            "Hindi pa handa ang Firebase. I-refresh ang page at subukan muli."
+        );
+        return;
+    }
+
+    const email = getParentEmail();
+    const password = getParentPassword();
+
+    if (!email || !password) {
+        setParentAuthStatus("Ilagay ang email at password.");
+        return;
+    }
+
+    try {
+        setParentAuthStatus("Nag-sign in...");
+
+        const result =
+            await parentAuth.signInWithEmailAndPassword(
+                email,
+                password
+            );
+
+        showParentSignedIn(result.user);
+        document.getElementById("parentPassword").value = "";
+    } catch (error) {
+        setParentAuthStatus(
+            "Hindi makapag-sign in: " + error.message
+        );
+    }
+}
+
+async function parentSignOut() {
+    if (!parentAuth) return;
+
+    try {
+        await parentAuth.signOut();
+        showParentSignedIn(null);
+    } catch (error) {
+        setParentAuthStatus(
+            "Hindi makapag-sign out: " + error.message
+        );
+    }
+}
+
+/*
+Initialize Firebase after the page loads.
+*/
+
+try {
+    if (typeof firebase !== "undefined") {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        parentAuth = firebase.auth();
+
+        parentAuth.onAuthStateChanged(function (user) {
+            showParentSignedIn(user);
+        });
+    } else {
+        setParentAuthStatus(
+            "Hindi na-load ang Firebase SDK. Suriin ang internet connection."
+        );
+    }
+} catch (error) {
+    setParentAuthStatus(
+        "Firebase initialization error: " + error.message
+    );
+}
 
 /*
 ==================================================
