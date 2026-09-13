@@ -338,6 +338,83 @@ app.post("/api/parent/profile", requireFirebaseUser, async (req, res) => {
   }
 });
 
+// CREATE CHILD PROFILE
+app.post("/api/parent/children", requireFirebaseUser, async (req, res) => {
+  try {
+    const nickname =
+      typeof req.body.nickname === "string"
+        ? req.body.nickname.trim()
+        : "";
+
+    const grade =
+      typeof req.body.grade === "string"
+        ? req.body.grade.trim()
+        : "";
+
+    if (!nickname || nickname.length > 40) {
+      return res.status(400).json({
+        error: "Maglagay ng palayaw na 1 hanggang 40 characters."
+      });
+    }
+
+    if (grade.length > 30) {
+      return res.status(400).json({
+        error: "Masyadong mahaba ang grade level."
+      });
+    }
+
+    const parentUid = req.firebaseUser.uid;
+
+    const childRef = await db
+      .collection("parents")
+      .doc(parentUid)
+      .collection("children")
+      .add({
+        nickname,
+        grade: grade || null,
+        createdAt: new Date().toISOString()
+      });
+
+    return res.status(201).json({
+      ok: true,
+      childId: childRef.id,
+      nickname,
+      grade: grade || null
+    });
+  } catch (error) {
+    console.error("Create child profile error:", error);
+    return res.status(500).json({
+      error: "Hindi nagawa ang child profile."
+    });
+  }
+});
+
+
+// LIST CHILD PROFILES FOR SIGNED-IN PARENT
+app.get("/api/parent/children", requireFirebaseUser, async (req, res) => {
+  try {
+    const parentUid = req.firebaseUser.uid;
+
+    const snapshot = await db
+      .collection("parents")
+      .doc(parentUid)
+      .collection("children")
+      .get();
+
+    const children = snapshot.docs.map(doc => ({
+      childId: doc.id,
+      ...doc.data()
+    }));
+
+    return res.json({ ok: true, children });
+  } catch (error) {
+    console.error("List child profiles error:", error);
+    return res.status(500).json({
+      error: "Hindi ma-load ang child profiles."
+    });
+  }
+});
+
 // ========================================
 // AIWOLF API
 // ========================================
