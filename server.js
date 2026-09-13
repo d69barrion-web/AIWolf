@@ -282,6 +282,63 @@ app.get("/api/firebase-status", async (req, res) => {
 });
 
 // ========================================
+// PARENT PROFILE — PROTECTED
+// ========================================
+
+async function requireFirebaseUser(req, res, next) {
+  try {
+    const authorization = req.headers.authorization || "";
+    const match = authorization.match(/^Bearer (.+)$/);
+
+    if (!match) {
+      return res.status(401).json({
+        error: "Missing Firebase ID token."
+      });
+    }
+
+    const decodedToken = await firebaseAuth.verifyIdToken(match[1]);
+    req.firebaseUser = decodedToken;
+
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      error: "Invalid or expired Firebase ID token."
+    });
+  }
+}
+
+app.post("/api/parent/profile", requireFirebaseUser, async (req, res) => {
+  try {
+    const user = req.firebaseUser;
+    const profileRef = db.collection("parents").doc(user.uid);
+    const profileSnapshot = await profileRef.get();
+
+    if (!profileSnapshot.exists) {
+      await profileRef.set({
+        uid: user.uid,
+        email: user.email || null,
+        role: "parent",
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    const savedProfile = await profileRef.get();
+
+    return res.json({
+      ok: true,
+      message: "Parent profile verified.",
+      profile: savedProfile.data()
+    });
+  } catch (error) {
+    console.error("Parent profile error:", error);
+
+    return res.status(500).json({
+      error: "Could not create or read parent profile."
+    });
+  }
+});
+
+// ========================================
 // AIWOLF API
 // ========================================
 
