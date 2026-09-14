@@ -1230,6 +1230,9 @@ async function loadChildProfiles() {
     const user = parentAuth && parentAuth.currentUser;
     if (!user) return;
 
+    const list = document.getElementById("childProfileList");
+    const select = document.getElementById("activeChildSelect");
+
     try {
         const idToken = await user.getIdToken();
 
@@ -1248,24 +1251,43 @@ async function loadChildProfiles() {
             throw new Error(data.error || "Hindi ma-load ang profiles.");
         }
 
-        const list = document.getElementById("childProfileList");
+        // Clear the current list and dropdown options
         list.innerHTML = "";
+        select.innerHTML = "";
 
-        if (!data.children.length) {
+        // Default dropdown option
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = "-- Select a child --";
+        select.appendChild(placeholder);
+
+        if (!data.children || !data.children.length) {
             list.textContent = "Wala pang child profile.";
             return;
         }
 
         data.children.forEach(child => {
+            // Add child to the visible profile list
             const item = document.createElement("p");
             item.textContent =
                 child.nickname +
                 (child.grade ? " — " + child.grade : "");
             list.appendChild(item);
+
+            // Add child to the dropdown
+            const option = document.createElement("option");
+            option.value = child.id;
+            option.textContent =
+                child.nickname +
+                (child.grade ? " — " + child.grade : "");
+            select.appendChild(option);
         });
+
     } catch (error) {
         console.error("Load child profiles error:", error);
-        setChildProfileStatus("Hindi ma-load ang profiles: " + error.message);
+        setChildProfileStatus(
+            "Hindi ma-load ang profiles: " + error.message
+        );
     }
 }
 
