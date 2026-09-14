@@ -2175,7 +2175,58 @@ async function sendQuestion() {
             aiReply
         );
 
+        /*
+------------------------------------------
+SAVE Q&A TO FIRESTORE FOR ACTIVE CHILD
+------------------------------------------
+*/
 
+const user =
+    parentAuth && parentAuth.currentUser;
+
+const activeChildSelect =
+    document.getElementById("activeChildSelect");
+
+const childId =
+    activeChildSelect ? activeChildSelect.value : "";
+
+if (user && childId) {
+    try {
+        const idToken = await user.getIdToken();
+
+        const saveResponse = await fetch(
+            `https://mychatbot-ct9m.onrender.com/api/parent/children/${encodeURIComponent(childId)}/conversations`,
+            {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${idToken}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    chapter: currentChapter,
+                    question: question,
+                    reply: aiReply
+                })
+            }
+        );
+
+        const saveData = await saveResponse.json();
+
+        if (!saveResponse.ok) {
+            throw new Error(
+                saveData.error || "Hindi na-save sa Firestore."
+            );
+        }
+
+        console.log("Q&A saved to Firestore.");
+    } catch (saveError) {
+        console.error("Firestore save error:", saveError);
+        setStatus(
+            "Nakuha ang sagot ni AIWolf, pero hindi na-save sa Firestore."
+        );
+    }
+}
+     
         setStatus(
             `🐺 AIWolf — ${currentMode} mode`
         );
