@@ -2569,11 +2569,11 @@ conversationDetails.addEventListener(
     "toggle",
     function () {
         if (conversationDetails.open) {
+            conversationSummary.textContent =
+                "▶ 👁️ Hide conversation";
+        } else {
             conversationSummary.innerHTML =
     '▼ <span class="eye-icon closed-eye"></span> Hide conversation';
-        } else {
-            conversationSummary.textContent =
-                "▶ 👁️ View conversation";
         }
     }
 );
