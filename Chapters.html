@@ -2190,16 +2190,22 @@ const activeChildSelect =
 const childId =
     activeChildSelect ? activeChildSelect.value : "";
 
-if (user && childId) {
+let firestoreStatus = "";
+
+if (!user) {
+    firestoreStatus = "Hindi naka-sign in ang parent; hindi na-save sa Firestore.";
+} else if (!childId) {
+    firestoreStatus = "Walang napiling active child; hindi na-save sa Firestore.";
+} else {
     try {
         const idToken = await user.getIdToken();
 
         const saveResponse = await fetch(
-            `https://mychatbot-ct9m.onrender.com/api/parent/children/${encodeURIComponent(childId)}/conversations`,
+            `https://mychatbot-ct9m.onrender.com/api/parent/children/$DIL1/conversations`,
             {
                 method: "POST",
                 headers: {
-                    "Authorization": `Bearer ${idToken}`,
+                    "Authorization": `Bearer $DIL2`,
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
@@ -2209,23 +2215,6 @@ if (user && childId) {
                 })
             }
         );
-
-        const saveData = await saveResponse.json();
-
-        if (!saveResponse.ok) {
-            throw new Error(
-                saveData.error || "Hindi na-save sa Firestore."
-            );
-        }
-
-        console.log("Q&A saved to Firestore.");
-    } catch (saveError) {
-        console.error("Firestore save error:", saveError);
-        setStatus(
-            "Nakuha ang sagot ni AIWolf, pero hindi na-save sa Firestore."
-        );
-    }
-}
      
         setStatus(
             `🐺 AIWolf — ${currentMode} mode`
