@@ -2689,6 +2689,16 @@ conversationList.appendChild(card);
         loadChildConversations
     );
 
+    const refreshConversationButton =
+    document.getElementById("refreshConversationButton");
+
+if (refreshConversationButton) {
+    refreshConversationButton.addEventListener(
+        "click",
+        loadChildConversations
+    );
+}
+
 /*
 ==================================================
 START
