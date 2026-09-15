@@ -2193,33 +2193,62 @@ const childId =
 let firestoreStatus = "";
 
 if (!user) {
-    firestoreStatus = "Hindi naka-sign in ang parent; hindi na-save sa Firestore.";
+    firestoreStatus =
+        "Hindi naka-sign in ang parent; hindi na-save sa Firestore.";
+
 } else if (!childId) {
-    firestoreStatus = "Walang napiling active child; hindi na-save sa Firestore.";
+    firestoreStatus =
+        "Walang napiling active child; hindi na-save sa Firestore.";
+
 } else {
     try {
         const idToken = await user.getIdToken();
 
-        const saveResponse = await fetch(
-            `https://mychatbot-ct9m.onrender.com/api/parent/children/$DIL1/conversations`,
-            {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer $DIL2`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    chapter: currentChapter,
-                    question: question,
-                    reply: aiReply
-                })
-            }
-        );
-     
-        setStatus(
-            `🐺 AIWolf — ${currentMode} mode`
-        );
+        const saveUrl =
+            "https://mychatbot-ct9m.onrender.com/api/parent/children/" +
+            encodeURIComponent(childId) +
+            "/conversations";
 
+        const saveResponse = await fetch(saveUrl, {
+            method: "POST",
+            headers: {
+                "Authorization": "Bearer " + idToken,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                chapter: currentChapter,
+                question: question,
+                reply: aiReply
+            })
+        });
+
+        const saveData = await saveResponse.json();
+
+        if (!saveResponse.ok) {
+            throw new Error(
+                saveData.error ||
+                saveData.message ||
+                JSON.stringify(saveData) ||
+                "Hindi na-save sa Firestore."
+            );
+        }
+
+        firestoreStatus =
+            "Na-save ang conversation sa Firestore.";
+
+        console.log("Q&A saved to Firestore:", saveData);
+
+    } catch (saveError) {
+        console.error("Firestore save error:", saveError);
+
+        firestoreStatus =
+            "Hindi na-save sa Firestore: " + saveError.message;
+    }
+}
+
+setStatus(
+    "🐺 AIWolf — " + currentMode + " mode. " + firestoreStatus
+);
 
     } catch (error) {
 
