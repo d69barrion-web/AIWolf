@@ -2550,60 +2550,113 @@ card.appendChild(
 
                 // CHILD QUESTION
 
-                const questionLabel =
-                    document.createElement("strong");
+const questionSection =
+    document.createElement("div");
 
-                questionLabel.textContent =
-                    "👧 Child:";
+questionSection.style.backgroundColor =
+    "#f0f6ff";
 
-                const question =
-                    document.createElement("p");
+questionSection.style.color =
+    "#222222";
 
-                question.appendChild(
-                    questionLabel
-                );
+questionSection.style.borderRadius =
+    "10px";
 
-                question.appendChild(
-                    document.createTextNode(
-                        " " +
-                        (conversation.question || "")
-                    )
-                );
+questionSection.style.padding =
+    "12px";
 
-                card.appendChild(question);
+questionSection.style.marginBottom =
+    "12px";
+
+const questionLabel =
+    document.createElement("strong");
+
+questionLabel.textContent =
+    "👧 Child's question";
+
+questionLabel.style.display =
+    "block";
+
+questionLabel.style.color =
+    "#222222";
+
+questionLabel.style.marginBottom =
+    "6px";
+
+const question =
+    document.createElement("p");
+
+question.textContent =
+    conversation.question || "";
+
+question.style.color =
+    "#222222";
+
+question.style.margin =
+    "0";
+
+questionSection.appendChild(questionLabel);
+questionSection.appendChild(question);
+
+card.appendChild(questionSection);
 
 
-                // AIWOLF REPLY
+// AIWOLF REPLY
 
-                const replyLabel =
-                    document.createElement("strong");
+const replySection =
+    document.createElement("div");
 
-                replyLabel.textContent =
-                    "🐺 AIWolf:";
+replySection.style.backgroundColor =
+    "#f3f8f1";
 
-                const reply =
-                    document.createElement("p");
+replySection.style.color =
+    "#222222";
 
-                reply.appendChild(
-                    replyLabel
-                );
+replySection.style.borderRadius =
+    "10px";
 
-                reply.appendChild(
-                    document.createElement("br")
-                );
+replySection.style.padding =
+    "12px";
 
-                reply.appendChild(
-                    document.createTextNode(
-                        conversation.reply || ""
-                    )
-                );
+const replyLabel =
+    document.createElement("strong");
 
-                card.appendChild(reply);
+replyLabel.textContent =
+    "🐺 AIWolf's answer";
+
+replyLabel.style.display =
+    "block";
+
+replyLabel.style.color =
+    "#222222";
+
+replyLabel.style.marginBottom =
+    "6px";
+
+const reply =
+    document.createElement("p");
+
+reply.textContent =
+    conversation.reply || "";
+
+reply.style.color =
+    "#222222";
+
+reply.style.margin =
+    "0";
+
+reply.style.whiteSpace =
+    "pre-wrap";
+
+replySection.appendChild(replyLabel);
+replySection.appendChild(reply);
+
+card.appendChild(replySection);
 
 
-                conversationList.appendChild(
-                    card
-                );
+// ADD CARD TO THE VIEWER
+
+conversationList.appendChild(card);
 
             }
         );
