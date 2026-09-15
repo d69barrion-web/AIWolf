@@ -2458,56 +2458,91 @@ async function loadChildConversations() {
             conversation => {
 
                 const card =
-                    document.createElement("div");
+    document.createElement("div");
 
-                card.style.border =
-                    "1px solid #ccc";
+card.style.border =
+    "1px solid #ddd";
 
-                card.style.borderRadius =
-                    "10px";
+card.style.borderRadius =
+    "14px";
 
-                card.style.padding =
-                    "15px";
+card.style.padding =
+    "16px";
 
-                card.style.marginBottom =
-                    "15px";
+card.style.marginBottom =
+    "18px";
+
+card.style.background =
+    "#fafafa";
+
+card.style.boxShadow =
+    "0 2px 6px rgba(0,0,0,0.06)";
 
 
                 // DATE / TIME
 
-                const date =
-                    document.createElement("small");
+                // HEADER
 
-                if (conversation.createdAt) {
+const header =
+    document.createElement("div");
 
-                    const dateObject =
-                        new Date(
-                            conversation.createdAt
-                        );
-
-                    date.textContent =
-                        dateObject.toLocaleString();
-
-                } else {
-
-                    date.textContent =
-                        "Date unavailable";
-
-                }
-
-                card.appendChild(date);
+header.style.marginBottom =
+    "12px";
 
 
-                // CHAPTER
+// CHAPTER
 
-                const chapter =
-                    document.createElement("p");
+const chapter =
+    document.createElement("strong");
 
-                chapter.textContent =
-                    "📖 Chapter " +
-                    conversation.chapter;
+chapter.textContent =
+    "📖 Chapter " +
+    conversation.chapter;
 
-                card.appendChild(chapter);
+chapter.style.display =
+    "block";
+
+chapter.style.fontSize =
+    "16px";
+
+header.appendChild(
+    chapter
+);
+
+
+// DATE / TIME
+
+const date =
+    document.createElement("small");
+
+if (conversation.createdAt) {
+
+    const dateObject =
+        new Date(
+            conversation.createdAt
+        );
+
+    date.textContent =
+        "🕐 " +
+        dateObject.toLocaleString();
+
+} else {
+
+    date.textContent =
+        "🕐 Date unavailable";
+
+}
+
+date.style.color =
+    "#666";
+
+header.appendChild(
+    date
+);
+
+card.appendChild(
+    header
+);
 
 
                 // CHILD QUESTION
