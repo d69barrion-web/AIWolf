@@ -785,39 +785,91 @@ footer {
 </div>
 
         <!-- CHILD PROFILE -->
+<div cla<!-- CHILD PROFILE -->
+
 <div class="parent-account" id="childProfilePanel" hidden>
-    <h3>👧 Child Profile</h3>
-    <p>Gumawa ng profile gamit ang palayaw. Huwag munang ilagay ang buong pangalan o birthday.</p>
 
-    <label for="childNickname">Palayaw</label>
-    <input
-        id="childNickname"
-        type="text"
-        maxlength="40"
-        placeholder="Hal. Angel"
-    >
+```
+<h3>👧 Child Profile</h3>
 
-    <label for="childGrade">Grade level (optional)</label>
-    <input
-        id="childGrade"
-        type="text"
-        maxlength="30"
-        placeholder="Hal. Grade 5"
-    >
+<p>
+    Gumawa ng profile gamit ang palayaw.
+    Huwag munang ilagay ang buong pangalan o birthday.
+</p>
 
-    <button type="button" id="createChildButton" onclick="createChildProfile()">
-        Create child profile
-    </button>
+<label for="childNickname">Palayaw</label>
 
-    <p id="childProfileStatus" aria-live="polite"></p>
+<input
+    id="childNickname"
+    type="text"
+    maxlength="40"
+    placeholder="Hal. Angel"
+>
 
-    <label for="activeChildSelect">Active child:</label>
+<label for="childGrade">Grade level (optional)</label>
+
+<input
+    id="childGrade"
+    type="text"
+    maxlength="30"
+    placeholder="Hal. Grade 5"
+>
+
+<button
+    type="button"
+    id="createChildButton"
+    onclick="createChildProfile()"
+>
+    Create child profile
+</button>
+
+<p
+    id="childProfileStatus"
+    aria-live="polite"
+></p>
+
+
+<!-- ACTIVE CHILD -->
+
+<label for="activeChildSelect">
+    Active child:
+</label>
+
 <select id="activeChildSelect">
-  <option value="">-- Select a child --</option>
+
+    <option value="">
+        -- Select a child --
+    </option>
+
 </select>
-    
-    <div id="childProfileList"></div>
+
+
+<div id="childProfileList"></div>
+
+
+<!-- PARENT CONVERSATION VIEWER -->
+
+<div
+    id="parentConversationViewer"
+    style="margin-top: 25px;"
+>
+
+    <h3>
+        🐺 AIWolf Conversation History
+    </h3>
+
+    <p
+        id="conversationViewerStatus"
+        aria-live="polite"
+    >
+        Pumili ng child para makita ang conversation history.
+    </p>
+
+    <div id="conversationList"></div>
+
 </div>
+</div>
+
 
         <!-- MODE -->
 
@@ -2312,26 +2364,49 @@ async function loadChildConversations() {
         parentAuth && parentAuth.currentUser;
 
     const activeChildSelect =
-        document.getElementById("activeChildSelect");
+        document.getElementById(
+            "activeChildSelect"
+        );
+
+    const conversationList =
+        document.getElementById(
+            "conversationList"
+        );
+
+    const status =
+        document.getElementById(
+            "conversationViewerStatus"
+        );
 
     const childId =
         activeChildSelect
             ? activeChildSelect.value
             : "";
 
+    if (!conversationList || !status) {
+        return;
+    }
+
+    conversationList.innerHTML = "";
+
     if (!user) {
-        console.log(
-            "Parent is not signed in."
-        );
+
+        status.textContent =
+            "Mag-sign in muna bilang parent.";
+
         return;
     }
 
     if (!childId) {
-        console.log(
-            "No active child selected."
-        );
+
+        status.textContent =
+            "Pumili ng child para makita ang conversation history.";
+
         return;
     }
+
+    status.textContent =
+        "⏳ Loading conversation history...";
 
     try {
 
@@ -2345,6 +2420,7 @@ async function loadChildConversations() {
                 "/conversations",
                 {
                     method: "GET",
+
                     headers: {
                         "Authorization":
                             "Bearer " + idToken
@@ -2364,9 +2440,126 @@ async function loadChildConversations() {
 
         }
 
-        console.log(
-            "AIWolf conversation history:",
-            data
+        const conversations =
+            data.conversations || [];
+
+        if (!conversations.length) {
+
+            status.textContent =
+                "Wala pang conversation ang child na ito.";
+
+            return;
+        }
+
+        status.textContent =
+            conversations.length +
+            " conversation" +
+            (conversations.length === 1
+                ? ""
+                : "s") +
+            " found.";
+
+        conversations.forEach(
+            conversation => {
+
+                const card =
+                    document.createElement("div");
+
+                card.style.border =
+                    "1px solid #ccc";
+
+                card.style.borderRadius =
+                    "10px";
+
+                card.style.padding =
+                    "15px";
+
+                card.style.marginBottom =
+                    "15px";
+
+
+                /*
+                DATE / TIME
+                */
+
+                const date =
+                    document.createElement("small");
+
+                if (conversation.createdAt) {
+
+                    const dateObject =
+                        new Date(
+                            conversation.createdAt
+                        );
+
+                    date.textContent =
+                        dateObject.toLocaleString();
+
+                } else {
+
+                    date.textContent =
+                        "Date unavailable";
+
+                }
+
+                card.appendChild(date);
+
+
+                /*
+                CHAPTER
+                */
+
+                const chapter =
+                    document.createElement("p");
+
+                chapter.innerHTML =
+                    "<strong>📖 Chapter " +
+                    conversation.chapter +
+                    "</strong>";
+
+                card.appendChild(chapter);
+
+
+                /*
+                CHILD QUESTION
+                */
+
+                const question =
+                    document.createElement("p");
+
+                question.innerHTML =
+                    "<strong>👧 Child:</strong> " +
+                    escapeHtml(
+                        conversation.question
+                    );
+
+                card.appendChild(question);
+
+
+                /*
+                AIWOLF REPLY
+                */
+
+                const reply =
+                    document.createElement("p");
+
+                reply.innerHTML =
+                    "<strong>🐺 AIWolf:</strong><br>" +
+                    escapeHtml(
+                        conversation.reply
+                    ).replace(
+                        /\n/g,
+                        "<br>"
+                    );
+
+                card.appendChild(reply);
+
+
+                conversationList.appendChild(
+                    card
+                );
+
+            }
         );
 
     } catch (error) {
@@ -2375,6 +2568,10 @@ async function loadChildConversations() {
             "Load conversations error:",
             error
         );
+
+        status.textContent =
+            "Hindi ma-load ang conversation history: " +
+            error.message;
 
     }
 }
