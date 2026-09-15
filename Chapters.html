@@ -1276,7 +1276,7 @@ async function loadChildProfiles() {
 
             // Add child to the dropdown
             const option = document.createElement("option");
-            option.value = child.id;
+            option.value = child.childId;
             option.textContent =
                 child.nickname +
                 (child.grade ? " — " + child.grade : "");
