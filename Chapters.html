@@ -2563,7 +2563,20 @@ const conversationSummary =
     document.createElement("summary");
 
 conversationSummary.textContent =
-    "👁️ View conversation";
+    "▶ 👁️ View conversation";
+
+conversationDetails.addEventListener(
+    "toggle",
+    function () {
+        if (conversationDetails.open) {
+            conversationSummary.textContent =
+                "▼ 👁️ Hide conversation";
+        } else {
+            conversationSummary.textContent =
+                "▶ 👁️ View conversation";
+        }
+    }
+);
 
 conversationSummary.style.cursor =
     "pointer";
