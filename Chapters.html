@@ -2589,6 +2589,13 @@ async function loadChildConversations() {
     }
 }
 
+    document
+    .getElementById("activeChildSelect")
+    .addEventListener(
+        "change",
+        loadChildConversations
+    );
+
 /*
 ==================================================
 START
