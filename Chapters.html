@@ -2554,6 +2554,29 @@ card.appendChild(
     header
 );
 
+                // COLLAPSIBLE CONVERSATION
+
+const conversationDetails =
+    document.createElement("details");
+
+const conversationSummary =
+    document.createElement("summary");
+
+conversationSummary.textContent =
+    "👁️ View conversation";
+
+conversationSummary.style.cursor =
+    "pointer";
+
+conversationSummary.style.fontWeight =
+    "bold";
+
+conversationSummary.style.color =
+    "#222222";
+
+conversationDetails.appendChild(
+    conversationSummary
+);
 
                 // CHILD QUESTION
 
@@ -2605,7 +2628,9 @@ question.style.margin =
 questionSection.appendChild(questionLabel);
 questionSection.appendChild(question);
 
-card.appendChild(questionSection);
+conversationDetails.appendChild(
+    questionSection
+);
 
 
 // AIWOLF REPLY
@@ -2658,8 +2683,13 @@ reply.style.whiteSpace =
 replySection.appendChild(replyLabel);
 replySection.appendChild(reply);
 
-card.appendChild(replySection);
+conversationDetails.appendChild(
+    replySection
+);
 
+                card.appendChild(
+    conversationDetails
+);
 
 // ADD CARD TO THE VIEWER
 
