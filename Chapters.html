@@ -2554,8 +2554,17 @@ card.appendChild(
     header
 );
 
+                ```js
+// CONVERSATION CONTENT
 
-                // CHILD QUESTION
+const conversationContent =
+    document.createElement("div");
+
+conversationContent.style.display =
+    "none";
+
+
+// CHILD QUESTION
 
 const questionSection =
     document.createElement("div");
@@ -2602,10 +2611,17 @@ question.style.color =
 question.style.margin =
     "0";
 
-questionSection.appendChild(questionLabel);
-questionSection.appendChild(question);
+questionSection.appendChild(
+    questionLabel
+);
 
-card.appendChild(questionSection);
+questionSection.appendChild(
+    question
+);
+
+conversationContent.appendChild(
+    questionSection
+);
 
 
 // AIWOLF REPLY
@@ -2655,15 +2671,78 @@ reply.style.margin =
 reply.style.whiteSpace =
     "pre-wrap";
 
-replySection.appendChild(replyLabel);
-replySection.appendChild(reply);
+replySection.appendChild(
+    replyLabel
+);
 
-card.appendChild(replySection);
+replySection.appendChild(
+    reply
+);
+
+conversationContent.appendChild(
+    replySection
+);
 
 
-// ADD CARD TO THE VIEWER
+// VIEW / HIDE BUTTON
 
-conversationList.appendChild(card);
+const toggleButton =
+    document.createElement("button");
+
+toggleButton.type =
+    "button";
+
+toggleButton.textContent =
+    "👁️ View conversation";
+
+toggleButton.style.marginTop =
+    "10px";
+
+toggleButton.addEventListener(
+    "click",
+    function () {
+
+        const isHidden =
+            conversationContent.style.display ===
+            "none";
+
+        if (isHidden) {
+
+            conversationContent.style.display =
+                "block";
+
+            toggleButton.textContent =
+                "👁️ Hide conversation";
+
+        } else {
+
+            conversationContent.style.display =
+                "none";
+
+            toggleButton.textContent =
+                "👁️ View conversation";
+
+        }
+
+    }
+);
+
+card.appendChild(
+    toggleButton
+);
+
+card.appendChild(
+    conversationContent
+);
+
+
+// ADD CARD TO VIEWER
+
+conversationList.appendChild(
+    card
+);
+```
+
 
             }
         );
