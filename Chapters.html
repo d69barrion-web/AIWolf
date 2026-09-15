@@ -2562,15 +2562,15 @@ const conversationDetails =
 const conversationSummary =
     document.createElement("summary");
 
-conversationSummary.textContent =
-    "▶ 👁️ View conversation";
+conversationSummary.innerHTML =
+    '▶ <span class="eye-icon open-eye"></span> View conversation';
 
 conversationDetails.addEventListener(
     "toggle",
     function () {
         if (conversationDetails.open) {
-            conversationSummary.textContent =
-                "▼ 👁️ Hide conversation";
+            conversationSummary.innerHTML =
+    '▼ <span class="eye-icon closed-eye"></span> Hide conversation';
         } else {
             conversationSummary.textContent =
                 "▶ 👁️ View conversation";
