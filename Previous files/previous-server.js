@@ -67,8 +67,6 @@ const AIWOLF_LIMIT = 10;
 // Time window: 10 minutes
 const AIWOLF_WINDOW = 10 * 60 * 1000;
 
-const AIWOLF_DAILY_LIMIT = 5;
-
 // Visitor records
 const aiWolfVisitors = new Map();
 
