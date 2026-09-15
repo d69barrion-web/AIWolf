@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const OpenAI = require("openai");
+const { initializeApp, cert } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 
 const app = express();
 
@@ -16,6 +19,40 @@ const client = new OpenAI({
 });
 
 // ========================================
+// FIREBASE ADMIN / FIRESTORE
+// ========================================
+
+let firebaseApp;
+let db;
+let firebaseAuth;
+
+function initializeFirebase() {
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (!projectId || !clientEmail || !privateKey) {
+    throw new Error(
+      "Firebase configuration is incomplete. Required environment variables: " +
+      "FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY"
+    );
+  }
+
+  firebaseApp = initializeApp({
+    credential: cert({
+      projectId,
+      clientEmail,
+      privateKey: privateKey.replace(/\\n/g, "\n")
+    })
+  });
+
+  db = getFirestore(firebaseApp);
+  firebaseAuth = getAuth(firebaseApp);
+}
+
+initializeFirebase();
+
+// ========================================
 // AIWOLF SETTINGS
 // ========================================
 
@@ -29,6 +66,8 @@ const AIWOLF_LIMIT = 10;
 
 // Time window: 10 minutes
 const AIWOLF_WINDOW = 10 * 60 * 1000;
+
+const AIWOLF_DAILY_LIMIT = 5;
 
 // Visitor records
 const aiWolfVisitors = new Map();
@@ -47,9 +86,30 @@ function getVisitorIP(req) {
   return req.socket.remoteAddress || "unknown";
 }
 
+
+function getPhilippinesDateKey() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+
+  const date = {};
+
+  for (const part of parts) {
+    if (part.type !== "literal") {
+      date[part.type] = part.value;
+    }
+  }
+
+  return `${date.year}-${date.month}-${date.day}`;
+}
+
 function checkAIWolfRateLimit(req) {
   const ip = getVisitorIP(req);
   const now = Date.now();
+  const today = getPhilippinesDateKey();
 
   let visitor = aiWolfVisitors.get(ip);
 
@@ -57,39 +117,55 @@ function checkAIWolfRateLimit(req) {
   if (!visitor) {
     visitor = {
       count: 0,
-      startTime: now
+      startTime: now,
+      dailyCount: 0,
+      dayKey: today
     };
 
     aiWolfVisitors.set(ip, visitor);
   }
 
-  // Reset after 10 minutes
+  // Reset daily counter at midnight in the Philippines
+  if (visitor.dayKey !== today) {
+    visitor.dailyCount = 0;
+    visitor.dayKey = today;
+  }
+
+  // Reset 10-minute counter
   if (now - visitor.startTime >= AIWOLF_WINDOW) {
     visitor.count = 0;
     visitor.startTime = now;
   }
 
-  // Limit reached
+  // Daily limit reached
+  if (visitor.dailyCount >= AIWOLF_DAILY_LIMIT) {
+    return {
+      allowed: false,
+      remaining: 0,
+      reason: "daily_limit"
+    };
+  }
+
+  // 10-minute limit reached
   if (visitor.count >= AIWOLF_LIMIT) {
     const retryAfterMs =
       AIWOLF_WINDOW - (now - visitor.startTime);
 
-    const retryAfterSeconds =
-      Math.ceil(retryAfterMs / 1000);
-
     return {
       allowed: false,
       remaining: 0,
-      retryAfter: retryAfterSeconds
+      retryAfter: Math.ceil(retryAfterMs / 1000),
+      reason: "window_limit"
     };
   }
 
   // Accept request
   visitor.count++;
+  visitor.dailyCount++;
 
   return {
     allowed: true,
-    remaining: AIWOLF_LIMIT - visitor.count
+    remaining: AIWOLF_DAILY_LIMIT - visitor.dailyCount
   };
 }
 
@@ -214,9 +290,297 @@ Do not claim to have created the underlying AI technology.
 app.get("/", (req, res) => {
   res.json({
     status: "AIWolf server is running",
-    testMode: AIWOLF_TEST_MODE
+    testMode: AIWOLF_TEST_MODE,
+    firebase: "connected"
   });
 });
+
+// ========================================
+// FIREBASE CONNECTION TEST
+// ========================================
+
+app.get("/api/firebase-status", async (req, res) => {
+  try {
+    // A lightweight read of a reserved document confirms that
+    // the Admin SDK can reach Firestore.
+    await db.collection("_system").doc("connection").get();
+
+    res.json({
+      status: "Firebase Admin + Firestore connected",
+      firestore: "connected",
+      auth: "initialized"
+    });
+  } catch (error) {
+    console.error("Firebase status error:", error);
+
+    res.status(500).json({
+      status: "Firebase connection error",
+      error: error.message
+    });
+  }
+});
+
+// ========================================
+// PARENT PROFILE — PROTECTED
+// ========================================
+
+async function requireFirebaseUser(req, res, next) {
+  try {
+    const authorization = req.headers.authorization || "";
+    const match = authorization.match(/^Bearer (.+)$/);
+
+    if (!match) {
+      return res.status(401).json({
+        error: "Missing Firebase ID token."
+      });
+    }
+
+    const decodedToken = await firebaseAuth.verifyIdToken(match[1]);
+    req.firebaseUser = decodedToken;
+
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      error: "Invalid or expired Firebase ID token."
+    });
+  }
+}
+
+app.post("/api/parent/profile", requireFirebaseUser, async (req, res) => {
+  try {
+    const user = req.firebaseUser;
+    const profileRef = db.collection("parents").doc(user.uid);
+    const profileSnapshot = await profileRef.get();
+
+    if (!profileSnapshot.exists) {
+      await profileRef.set({
+        uid: user.uid,
+        email: user.email || null,
+        role: "parent",
+        createdAt: new Date().toISOString()
+      });
+    }
+
+    const savedProfile = await profileRef.get();
+
+    return res.json({
+      ok: true,
+      message: "Parent profile verified.",
+      profile: savedProfile.data()
+    });
+  } catch (error) {
+    console.error("Parent profile error:", error);
+
+    return res.status(500).json({
+      error: "Could not create or read parent profile."
+    });
+  }
+});
+
+// CREATE CHILD PROFILE
+app.post("/api/parent/children", requireFirebaseUser, async (req, res) => {
+  try {
+    const nickname =
+      typeof req.body.nickname === "string"
+        ? req.body.nickname.trim()
+        : "";
+
+    const grade =
+      typeof req.body.grade === "string"
+        ? req.body.grade.trim()
+        : "";
+
+    if (!nickname || nickname.length > 40) {
+      return res.status(400).json({
+        error: "Maglagay ng palayaw na 1 hanggang 40 characters."
+      });
+    }
+
+    if (grade.length > 30) {
+      return res.status(400).json({
+        error: "Masyadong mahaba ang grade level."
+      });
+    }
+
+    const parentUid = req.firebaseUser.uid;
+
+    const childRef = await db
+      .collection("parents")
+      .doc(parentUid)
+      .collection("children")
+      .add({
+        nickname,
+        grade: grade || null,
+        createdAt: new Date().toISOString()
+      });
+
+    return res.status(201).json({
+      ok: true,
+      childId: childRef.id,
+      nickname,
+      grade: grade || null
+    });
+  } catch (error) {
+    console.error("Create child profile error:", error);
+    return res.status(500).json({
+      error: "Hindi nagawa ang child profile."
+    });
+  }
+});
+
+// LIST CHILD PROFILES FOR SIGNED-IN PARENT
+app.get("/api/parent/children", requireFirebaseUser, async (req, res) => {
+  try {
+    const parentUid = req.firebaseUser.uid;
+
+    const snapshot = await db
+      .collection("parents")
+      .doc(parentUid)
+      .collection("children")
+      .get();
+
+    const children = snapshot.docs.map(doc => ({
+      childId: doc.id,
+      ...doc.data()
+    }));
+
+    return res.json({ ok: true, children });
+  } catch (error) {
+    console.error("List child profiles error:", error);
+    return res.status(500).json({
+      error: "Hindi ma-load ang child profiles."
+    });
+  }
+});
+
+// SAVE ONE AIWOLF QUESTION + REPLY TO A CHILD'S CLOUD HISTORY
+app.post(
+  "/api/parent/children/:childId/conversations",
+  requireFirebaseUser,
+  async (req, res) => {
+    try {
+      const parentUid = req.firebaseUser.uid;
+      const childId = req.params.childId;
+
+      const chapter = Number(req.body.chapter);
+      const question =
+        typeof req.body.question === "string"
+          ? req.body.question.trim()
+          : "";
+      const reply =
+        typeof req.body.reply === "string"
+          ? req.body.reply.trim()
+          : "";
+
+      if (!Number.isInteger(chapter) || chapter < 1 || chapter > 100) {
+        return res.status(400).json({
+          error: "Invalid chapter number."
+        });
+      }
+
+      if (!question || question.length > 5000) {
+        return res.status(400).json({
+          error: "Question must be 1 to 5000 characters."
+        });
+      }
+
+      if (!reply || reply.length > 20000) {
+        return res.status(400).json({
+          error: "Reply must be 1 to 20000 characters."
+        });
+      }
+
+      // Verify that this child belongs to the signed-in parent.
+      const childRef = db
+        .collection("parents")
+        .doc(parentUid)
+        .collection("children")
+        .doc(childId);
+
+      const childSnapshot = await childRef.get();
+
+      if (!childSnapshot.exists) {
+        return res.status(404).json({
+          error: "Child profile not found."
+        });
+      }
+
+      const conversationRef = await childRef
+        .collection("conversations")
+        .add({
+          chapter,
+          question,
+          reply,
+          createdAt: new Date().toISOString()
+        });
+
+      return res.status(201).json({
+        ok: true,
+        conversationId: conversationRef.id
+      });
+    } catch (error) {
+      console.error("Save AIWolf conversation error:", error);
+
+      return res.status(500).json({
+        error: "Could not save the conversation."
+      });
+    }
+  }
+);
+
+// GET AIWOLF CONVERSATIONS FOR ONE CHILD
+app.get(
+  "/api/parent/children/:childId/conversations",
+  requireFirebaseUser,
+  async (req, res) => {
+    try {
+      const parentUid = req.firebaseUser.uid;
+      const childId = req.params.childId;
+
+      // Verify that this child belongs to the signed-in parent.
+      const childRef = db
+        .collection("parents")
+        .doc(parentUid)
+        .collection("children")
+        .doc(childId);
+
+      const childSnapshot = await childRef.get();
+
+      if (!childSnapshot.exists) {
+        return res.status(404).json({
+          error: "Child profile not found."
+        });
+      }
+
+      // Get the child's AIWolf conversation history.
+      const snapshot = await childRef
+        .collection("conversations")
+        .orderBy("createdAt", "desc")
+        .get();
+
+      const conversations = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      return res.json({
+        ok: true,
+        childId,
+        conversations
+      });
+
+    } catch (error) {
+      console.error(
+        "Get AIWolf conversations error:",
+        error
+      );
+
+      return res.status(500).json({
+        error: "Could not load the conversation history."
+      });
+    }
+  }
+);
 
 // ========================================
 // AIWOLF API
@@ -292,7 +656,6 @@ app.post("/api/aiwolf", async (req, res) => {
         remaining: rateLimit.remaining,
         testMode: true
       });
-
     }
 
     // ------------------------------------
@@ -300,26 +663,20 @@ app.post("/api/aiwolf", async (req, res) => {
     // ------------------------------------
 
     const input = [
-
       {
         role: "system",
         content: AIWOLF_INSTRUCTIONS
       },
-
       {
         role: "user",
         content:
           `CHAPTER:\n${chapter || "Unknown"}\n\n` +
-
           `MODE:\n${selectedMode}\n\n` +
-
           `CHAPTER TEXT:\n` +
           `${chapterText}\n\n` +
-
           `READER QUESTION:\n` +
           `${question}`
       }
-
     ];
 
     // ------------------------------------
@@ -411,4 +768,5 @@ app.listen(PORT, "0.0.0.0", () => {
     `AIWolf limit: ${AIWOLF_LIMIT} requests / 10 minutes`
   );
 
+  console.log("Firebase Admin: connected");
 });
