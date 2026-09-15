@@ -489,6 +489,60 @@ app.post(
   }
 );
 
+// GET AIWOLF CONVERSATIONS FOR ONE CHILD
+app.get(
+  "/api/parent/children/:childId/conversations",
+  requireFirebaseUser,
+  async (req, res) => {
+    try {
+      const parentUid = req.firebaseUser.uid;
+      const childId = req.params.childId;
+
+      // Verify that this child belongs to the signed-in parent.
+      const childRef = db
+        .collection("parents")
+        .doc(parentUid)
+        .collection("children")
+        .doc(childId);
+
+      const childSnapshot = await childRef.get();
+
+      if (!childSnapshot.exists) {
+        return res.status(404).json({
+          error: "Child profile not found."
+        });
+      }
+
+      // Get the child's AIWolf conversation history.
+      const snapshot = await childRef
+        .collection("conversations")
+        .orderBy("createdAt", "desc")
+        .get();
+
+      const conversations = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      return res.json({
+        ok: true,
+        childId,
+        conversations
+      });
+
+    } catch (error) {
+      console.error(
+        "Get AIWolf conversations error:",
+        error
+      );
+
+      return res.status(500).json({
+        error: "Could not load the conversation history."
+      });
+    }
+  }
+);
+
 // ========================================
 // AIWOLF API
 // ========================================
