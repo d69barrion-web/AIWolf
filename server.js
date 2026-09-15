@@ -67,6 +67,8 @@ const AIWOLF_LIMIT = 10;
 // Time window: 10 minutes
 const AIWOLF_WINDOW = 10 * 60 * 1000;
 
+const AIWOLF_DAILY_LIMIT = 5;
+
 // Visitor records
 const aiWolfVisitors = new Map();
 
@@ -84,9 +86,30 @@ function getVisitorIP(req) {
   return req.socket.remoteAddress || "unknown";
 }
 
+
+function getPhilippinesDateKey() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Manila",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+
+  const date = {};
+
+  for (const part of parts) {
+    if (part.type !== "literal") {
+      date[part.type] = part.value;
+    }
+  }
+
+  return `${date.year}-${date.month}-${date.day}`;
+}
+
 function checkAIWolfRateLimit(req) {
   const ip = getVisitorIP(req);
   const now = Date.now();
+  const today = getPhilippinesDateKey();
 
   let visitor = aiWolfVisitors.get(ip);
 
@@ -94,39 +117,55 @@ function checkAIWolfRateLimit(req) {
   if (!visitor) {
     visitor = {
       count: 0,
-      startTime: now
+      startTime: now,
+      dailyCount: 0,
+      dayKey: today
     };
 
     aiWolfVisitors.set(ip, visitor);
   }
 
-  // Reset after 10 minutes
+  // Reset daily counter at midnight in the Philippines
+  if (visitor.dayKey !== today) {
+    visitor.dailyCount = 0;
+    visitor.dayKey = today;
+  }
+
+  // Reset 10-minute counter
   if (now - visitor.startTime >= AIWOLF_WINDOW) {
     visitor.count = 0;
     visitor.startTime = now;
   }
 
-  // Limit reached
+  // Daily limit reached
+  if (visitor.dailyCount >= AIWOLF_DAILY_LIMIT) {
+    return {
+      allowed: false,
+      remaining: 0,
+      reason: "daily_limit"
+    };
+  }
+
+  // 10-minute limit reached
   if (visitor.count >= AIWOLF_LIMIT) {
     const retryAfterMs =
       AIWOLF_WINDOW - (now - visitor.startTime);
 
-    const retryAfterSeconds =
-      Math.ceil(retryAfterMs / 1000);
-
     return {
       allowed: false,
       remaining: 0,
-      retryAfter: retryAfterSeconds
+      retryAfter: Math.ceil(retryAfterMs / 1000),
+      reason: "window_limit"
     };
   }
 
   // Accept request
   visitor.count++;
+  visitor.dailyCount++;
 
   return {
     allowed: true,
-    remaining: AIWOLF_LIMIT - visitor.count
+    remaining: AIWOLF_DAILY_LIMIT - visitor.dailyCount
   };
 }
 
