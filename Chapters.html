@@ -2478,9 +2478,7 @@ async function loadChildConversations() {
                     "15px";
 
 
-                /*
-                DATE / TIME
-                */
+                // DATE / TIME
 
                 const date =
                     document.createElement("small");
@@ -2505,52 +2503,67 @@ async function loadChildConversations() {
                 card.appendChild(date);
 
 
-                /*
-                CHAPTER
-                */
+                // CHAPTER
 
                 const chapter =
                     document.createElement("p");
 
-                chapter.innerHTML =
-                    "<strong>📖 Chapter " +
-                    conversation.chapter +
-                    "</strong>";
+                chapter.textContent =
+                    "📖 Chapter " +
+                    conversation.chapter;
 
                 card.appendChild(chapter);
 
 
-                /*
-                CHILD QUESTION
-                */
+                // CHILD QUESTION
+
+                const questionLabel =
+                    document.createElement("strong");
+
+                questionLabel.textContent =
+                    "👧 Child:";
 
                 const question =
                     document.createElement("p");
 
-                question.innerHTML =
-                    "<strong>👧 Child:</strong> " +
-                    escapeHtml(
-                        conversation.question
-                    );
+                question.appendChild(
+                    questionLabel
+                );
+
+                question.appendChild(
+                    document.createTextNode(
+                        " " +
+                        (conversation.question || "")
+                    )
+                );
 
                 card.appendChild(question);
 
 
-                /*
-                AIWOLF REPLY
-                */
+                // AIWOLF REPLY
+
+                const replyLabel =
+                    document.createElement("strong");
+
+                replyLabel.textContent =
+                    "🐺 AIWolf:";
 
                 const reply =
                     document.createElement("p");
 
-                reply.innerHTML =
-                    "<strong>🐺 AIWolf:</strong><br>" +
-                    escapeHtml(
-                        conversation.reply
-                    ).replace(
-                        /\n/g,
-                        "<br>"
-                    );
+                reply.appendChild(
+                    replyLabel
+                );
+
+                reply.appendChild(
+                    document.createElement("br")
+                );
+
+                reply.appendChild(
+                    document.createTextNode(
+                        conversation.reply || ""
+                    )
+                );
 
                 card.appendChild(reply);
 
@@ -2576,10 +2589,6 @@ async function loadChildConversations() {
     }
 }
 
-    document
-    .getElementById("activeChildSelect")
-    .addEventListener("change", loadChildConversations);
-    
 /*
 ==================================================
 START
