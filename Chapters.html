@@ -2557,8 +2557,17 @@ if (conversation.createdAt) {
         );
 
     date.textContent =
-        "🕐 " +
-        dateObject.toLocaleString();
+    "🕐 " +
+    dateObject.toLocaleDateString("en-PH", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+    }) +
+    " • " +
+    dateObject.toLocaleTimeString("en-PH", {
+        hour: "numeric",
+        minute: "2-digit"
+    });
 
 } else {
 
