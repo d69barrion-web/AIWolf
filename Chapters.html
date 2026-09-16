@@ -2409,6 +2409,11 @@ async function loadChildConversations() {
             "conversationList"
         );
 
+    const chapterFilter =
+    document.getElementById(
+        "chapterFilter"
+    );
+
     const status =
         document.getElementById(
             "conversationViewerStatus"
@@ -2479,8 +2484,61 @@ async function loadChildConversations() {
         const conversations =
             data.conversations || [];
 
-        if (!conversations.length) {
+        // POPULATE CHAPTER FILTER
 
+if (chapterFilter) {
+    const previousValue =
+        chapterFilter.value || "all";
+
+    chapterFilter.innerHTML =
+        '<option value="all">All chapters</option>';
+
+    const chapters = [
+        ...new Set(
+            conversations.map(
+                conversation =>
+                    Number(conversation.chapter)
+            )
+        )
+    ].filter(Number.isFinite).sort((a, b) => a - b);
+
+    chapters.forEach(chapterNumber => {
+        const option =
+            document.createElement("option");
+
+        option.value =
+            String(chapterNumber);
+
+        option.textContent =
+            "Chapter " + chapterNumber;
+
+        chapterFilter.appendChild(option);
+    });
+
+    if (
+        [...chapterFilter.options].some(
+            option => option.value === previousValue
+        )
+    ) {
+        chapterFilter.value = previousValue;
+    } else {
+        chapterFilter.value = "all";
+    }
+}      const selectedChapter =
+    chapterFilter
+        ? chapterFilter.value
+        : "all";
+
+const filteredConversations =
+    selectedChapter === "all"
+        ? conversations
+        : conversations.filter(
+            conversation =>
+                String(conversation.chapter) === selectedChapter
+        );
+
+        if (!filteredConversations.length) {
+            
             status.textContent =
                 "Wala pang conversation ang child na ito.";
 
@@ -2488,15 +2546,15 @@ async function loadChildConversations() {
         }
 
         status.textContent =
-            conversations.length +
-            " conversation" +
-            (conversations.length === 1
-                ? ""
-                : "s") +
-            " found.";
+    filteredConversations.length +
+    " conversation" +
+    (filteredConversations.length === 1
+        ? ""
+        : "s") +
+    " found.";
 
-        conversations.forEach(
-            conversation => {
+        filteredConversations.forEach(
+    conversation => {
 
                 const card =
     document.createElement("div");
@@ -2781,6 +2839,16 @@ conversationList.appendChild(card);
 if (refreshConversationButton) {
     refreshConversationButton.addEventListener(
         "click",
+        loadChildConversations
+    );
+}
+
+    const chapterFilter =
+    document.getElementById("chapterFilter");
+
+if (chapterFilter) {
+    chapterFilter.addEventListener(
+        "change",
         loadChildConversations
     );
 }
