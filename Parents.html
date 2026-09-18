@@ -1120,6 +1120,44 @@ const firebaseConfig = {
 let parentAuth = null;
 let parentDb = null;
 
+async function loadAIWolfCredits() {
+
+    if (!parentDb) return;
+
+    try {
+
+        const usageDoc =
+            await parentDb
+                .collection("_aiwolf")
+                .doc("usage")
+                .get();
+
+        if (!usageDoc.exists) {
+            console.log("AIWolf usage document not found.");
+            return;
+        }
+
+        const data = usageDoc.data();
+
+        document.getElementById("aiWolfStartingCredits").textContent =
+            "$" + Number(data.startingCredits || 0).toFixed(2);
+
+        document.getElementById("aiWolfTotalCost").textContent =
+            "$" + Number(data.totalCost || 0).toFixed(4);
+
+        document.getElementById("aiWolfRemainingCredits").textContent =
+            "$" + Number(data.estimatedRemainingCredits || 0).toFixed(2);
+
+    } catch (error) {
+
+        console.error(
+            "Error loading AIWolf credits:",
+            error
+        );
+
+    }
+}
+
 function setParentAuthStatus(message) {
     const status = document.getElementById("parentAuthStatus");
 
