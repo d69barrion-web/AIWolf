@@ -2377,7 +2377,8 @@ const activeChildSelect =
     document.getElementById("activeChildSelect");
 
 const childId =
-    activeChildSelect ? activeChildSelect.value : "";
+    localStorage.getItem("activeChildId") || "";
+    //activeChildSelect ? activeChildSelect.value : "";
 
 let firestoreStatus = "";
 
