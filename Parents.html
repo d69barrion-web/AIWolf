@@ -2836,23 +2836,7 @@ conversationList.appendChild(card);
     .getElementById("activeChildSelect")
     .addEventListener(
         "change",
-        function () {
-
-            const childId = this.value;
-
-            if (childId) {
-                localStorage.setItem(
-                    "activeChildId",
-                    childId
-                );
-            } else {
-                localStorage.removeItem(
-                    "activeChildId"
-                );
-            }
-
-            loadChildConversations();
-        }
+        loadChildConversations
     );
 
     const refreshConversationButton =
