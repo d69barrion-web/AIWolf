@@ -185,6 +185,95 @@ function checkAIWolfRateLimit(req) {
 }
 
 // ========================================
+// SAVE AIWOLF USAGE
+// ========================================
+
+async function recordAIWolfUsage(
+  inputTokens,
+  outputTokens,
+  totalTokens
+) {
+
+  const cost =
+    calculateAIWolfCost(
+      inputTokens,
+      outputTokens
+    );
+
+  const usageRef =
+    db
+      .collection("_aiwolf")
+      .doc("usage");
+
+  let updatedData;
+
+  await db.runTransaction(async (transaction) => {
+
+    const snapshot =
+      await transaction.get(usageRef);
+
+    const oldData =
+      snapshot.exists
+        ? snapshot.data()
+        : {};
+
+    const totalInputTokens =
+      Number(oldData.totalInputTokens || 0) +
+      inputTokens;
+
+    const totalOutputTokens =
+      Number(oldData.totalOutputTokens || 0) +
+      outputTokens;
+
+    const totalTokensUsed =
+      Number(oldData.totalTokens || 0) +
+      totalTokens;
+
+    const totalCost =
+      Number(oldData.totalCost || 0) +
+      cost;
+
+    const estimatedRemainingCredits =
+      Math.max(
+        0,
+        AIWOLF_STARTING_CREDITS - totalCost
+      );
+
+    updatedData = {
+      startingCredits:
+        AIWOLF_STARTING_CREDITS,
+
+      totalInputTokens,
+      totalOutputTokens,
+
+      totalTokens:
+        totalTokensUsed,
+
+      totalCost,
+
+      estimatedRemainingCredits,
+
+      updatedAt:
+        new Date().toISOString()
+    };
+
+    transaction.set(
+      usageRef,
+      updatedData,
+      {
+        merge: true
+      }
+    );
+
+  });
+
+  return {
+    ...updatedData,
+    currentRequestCost: cost
+  };
+}
+
+// ========================================
 // AIWOLF COST CALCULATOR
 // ========================================
 
