@@ -813,10 +813,6 @@ footer {
         at cloud conversation history.
     </p>
 </div>
-
-    <div class="mode-buttons">
-       <div style="margin-top: 15px;"><button type="button" onclick="window.location.href='Chapters.html'"> ← Back to Chapters </button></div> 
-    </div>
 -->
     <!-- CHILD PROFILE -->
 <div class="parent-account" id="childProfilePanel" hidden>
@@ -847,13 +843,15 @@ footer {
     placeholder="Hal. Grade 5"
 >
 
-<button
+<div class="parent-account"
+    <button 
     type="button"
     id="createChildButton"
     onclick="createChildProfile()"
 >
     Create child profile
 </button>
+</div>
 
 <p
     id="childProfileStatus"
