@@ -1404,6 +1404,7 @@ try {
         }
 
         parentAuth = firebase.auth();
+        parentDb = firebase.firestore();
 
         parentAuth.onAuthStateChanged(function (user) {
     showParentSignedIn(user);
