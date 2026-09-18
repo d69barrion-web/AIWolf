@@ -59,7 +59,7 @@ initializeFirebase();
 // TEST MODE:
 // true  = hindi tatawag sa OpenAI API
 // false = tunay na AIWolf / OpenAI response
-const AIWOLF_TEST_MODE = false;
+const AIWOLF_TEST_MODE = true;
 
 // Maximum AIWolf requests per visitor
 const AIWOLF_LIMIT = 10;
