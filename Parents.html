@@ -1120,42 +1120,56 @@ const firebaseConfig = {
 let parentAuth = null;
 let parentDb = null;
 
-async function loadAIWolfCredits() {
+function loadAIWolfCredits() {
 
     if (!parentDb) return;
 
-    try {
+    parentDb
+        .collection("_aiwolf")
+        .doc("usage")
+        .onSnapshot(
+            function (snapshot) {
 
-        const usageDoc =
-            await parentDb
-                .collection("_aiwolf")
-                .doc("usage")
-                .get();
+                if (!snapshot.exists) {
+                    return;
+                }
 
-        if (!usageDoc.exists) {
-            console.log("AIWolf usage document not found.");
-            return;
-        }
+                const data = snapshot.data();
 
-        const data = usageDoc.data();
+                document.getElementById(
+                    "aiWolfStartingCredits"
+                ).textContent =
+                    "$" +
+                    Number(
+                        data.startingCredits || 0
+                    ).toFixed(2);
 
-        document.getElementById("aiWolfStartingCredits").textContent =
-            "$" + Number(data.startingCredits || 0).toFixed(2);
+                document.getElementById(
+                    "aiWolfTotalCost"
+                ).textContent =
+                    "$" +
+                    Number(
+                        data.totalCost || 0
+                    ).toFixed(4);
 
-        document.getElementById("aiWolfTotalCost").textContent =
-            "$" + Number(data.totalCost || 0).toFixed(4);
+                document.getElementById(
+                    "aiWolfRemainingCredits"
+                ).textContent =
+                    "$" +
+                    Number(
+                        data.estimatedRemainingCredits || 0
+                    ).toFixed(2);
 
-        document.getElementById("aiWolfRemainingCredits").textContent =
-            "$" + Number(data.estimatedRemainingCredits || 0).toFixed(2);
+            },
+            function (error) {
 
-    } catch (error) {
+                alert(
+                    "AIWolf Credits Error:\n\n" +
+                    error.message
+                );
 
-        alert(
-        "AIWolf Credits Error:\n\n" +
-        error.message
+            }
         );
-
-    }
 }
 
 function setParentAuthStatus(message) {
