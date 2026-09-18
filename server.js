@@ -689,14 +689,30 @@ app.post("/api/aiwolf", async (req, res) => {
     });
 
     // ------------------------------------
-    // RESPONSE
-    // ------------------------------------
+// TOKEN USAGE
+// ------------------------------------
 
-    res.json({
-      reply: response.output_text,
-      remaining: rateLimit.remaining,
-      testMode: false
-    });
+const usage = response.usage || {};
+
+const inputTokens = usage.input_tokens || 0;
+const outputTokens = usage.output_tokens || 0;
+const totalTokens = usage.total_tokens || 0;
+
+// ------------------------------------
+// RESPONSE
+// ------------------------------------
+
+res.json({
+  reply: response.output_text,
+  remaining: rateLimit.remaining,
+  testMode: false,
+
+  usage: {
+    inputTokens,
+    outputTokens,
+    totalTokens
+  }
+});
 
   } catch (error) {
 
