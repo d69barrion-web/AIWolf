@@ -819,19 +819,42 @@ const inputTokens = usage.input_tokens || 0;
 const outputTokens = usage.output_tokens || 0;
 const totalTokens = usage.total_tokens || 0;
 
+const creditUsage =
+  await recordAIWolfUsage(
+    inputTokens,
+    outputTokens,
+    totalTokens
+  );
 // ------------------------------------
 // RESPONSE
 // ------------------------------------
 
 res.json({
   reply: response.output_text,
-  remaining: rateLimit.remaining,
+
+  remaining:
+    rateLimit.remaining,
+
   testMode: false,
 
   usage: {
     inputTokens,
     outputTokens,
     totalTokens
+  },
+
+  credits: {
+    startingCredits:
+      creditUsage.startingCredits,
+
+    currentRequestCost:
+      creditUsage.currentRequestCost,
+
+    totalCost:
+      creditUsage.totalCost,
+
+    estimatedRemainingCredits:
+      creditUsage.estimatedRemainingCredits
   }
 });
 
