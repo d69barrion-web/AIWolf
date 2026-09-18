@@ -69,6 +69,21 @@ const AIWOLF_WINDOW = 10 * 60 * 1000;
 
 const AIWOLF_DAILY_LIMIT = 5;
 
+// ========================================
+// AIWOLF CREDIT TRACKING
+// ========================================
+
+// Starting prepaid credits in USD.
+// Set this in Render Environment Variables.
+const AIWOLF_STARTING_CREDITS =
+  Number(process.env.AIWOLF_STARTING_CREDITS || 0);
+
+// GPT-5 mini standard pricing
+// Input: $0.25 / 1M tokens
+// Output: $2.00 / 1M tokens
+const AIWOLF_INPUT_PRICE_PER_MILLION = 0.25;
+const AIWOLF_OUTPUT_PRICE_PER_MILLION = 2.00;
+
 // Visitor records
 const aiWolfVisitors = new Map();
 
@@ -167,6 +182,23 @@ function checkAIWolfRateLimit(req) {
     allowed: true,
     remaining: AIWOLF_DAILY_LIMIT - visitor.dailyCount
   };
+}
+
+// ========================================
+// AIWOLF COST CALCULATOR
+// ========================================
+
+function calculateAIWolfCost(inputTokens, outputTokens) {
+
+  const inputCost =
+    (inputTokens / 1000000) *
+    AIWOLF_INPUT_PRICE_PER_MILLION;
+
+  const outputCost =
+    (outputTokens / 1000000) *
+    AIWOLF_OUTPUT_PRICE_PER_MILLION;
+
+  return inputCost + outputCost;
 }
 
 // ========================================
