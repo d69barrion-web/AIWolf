@@ -707,7 +707,10 @@ app.get(
 // AIWOLF API
 // ========================================
 
-app.post("/api/aiwolf", async (req, res) => {
+app.post(
+  "/api/aiwolf",
+  requireFirebaseUser,
+  async (req, res) => {
   try {
 
     // ------------------------------------
