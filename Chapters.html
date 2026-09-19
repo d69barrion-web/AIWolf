@@ -2217,6 +2217,24 @@ async function sendQuestion() {
             "sendButton"
         );
 
+    /*
+------------------------------------------
+REQUIRE SIGN-IN BEFORE TALKING TO AIWOLF
+------------------------------------------
+*/
+
+const user =
+    parentAuth && parentAuth.currentUser;
+
+if (!user) {
+
+    setStatus(
+        "🔒 Please sign in first bago makausap si AIWolf."
+    );
+
+    return;
+
+}
 
     const question =
         input.value.trim();
@@ -2368,8 +2386,7 @@ SAVE Q&A TO FIRESTORE FOR ACTIVE CHILD
 ------------------------------------------
 */
 
-const user =
-    parentAuth && parentAuth.currentUser;
+
 
 const activeChildSelect =
     document.getElementById("activeChildSelect");
