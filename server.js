@@ -828,16 +828,22 @@ const conversationHistory =
     if (AIWOLF_TEST_MODE) {
 
       return res.json({
-        reply:
-          `🐺 AIWolf TEST MODE\n\n` +
-          `Request accepted!\n\n` +
-          `Chapter: ${chapter || "Unknown"}\n` +
-          `Mode: ${selectedMode}\n\n` +
-          `Hindi muna ako tatawag sa OpenAI API dahil naka-TEST MODE tayo.\n\n` +
-          `Remaining requests: ${rateLimit.remaining}`,
-        remaining: rateLimit.remaining,
-        testMode: true
-      });
+  reply:
+    `🐺 AIWolf TEST MODE\n\n` +
+    `Request accepted!\n\n` +
+    `Chapter: ${chapter || "Unknown"}\n` +
+    `Mode: ${selectedMode}\n` +
+    `Child ID: ${childId}\n` +
+    `Previous conversations loaded: ${conversationHistory.length}\n\n` +
+    `Hindi muna ako tatawag sa OpenAI API dahil naka-TEST MODE tayo.\n\n` +
+    `Remaining requests: ${rateLimit.remaining}`,
+
+  remaining:
+    rateLimit.remaining,
+
+  testMode:
+    true
+});
     }
 
     // ------------------------------------
