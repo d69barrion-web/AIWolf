@@ -1234,7 +1234,13 @@ async function connectParentProfile(user) {
                     "Authorization": `Bearer ${idToken}`,
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({})
+                body: JSON.stringify({
+                    question: question,
+                chapter: currentChapter,
+                mode: currentMode,
+                chapterText: currentChapterText,
+                childId: childId
+                })
             }
         );
 
