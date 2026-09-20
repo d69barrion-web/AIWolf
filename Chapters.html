@@ -2325,17 +2325,23 @@ if (!childId) {
         ------------------------------------------
         */
 
-        const response =
-            await fetch(
-                "https://mychatbot-ct9m.onrender.com/api/aiwolf",
-                {
+        const idToken =
+    await user.getIdToken();
 
-                    method: "POST",
+const response =
+    await fetch(
+        "https://mychatbot-ct9m.onrender.com/api/aiwolf",
+        {
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+            method: "POST",
+
+            headers: {
+                "Authorization":
+                    "Bearer " + idToken,
+
+                "Content-Type":
+                    "application/json"
+            },
 
                     body: JSON.stringify({
                          question:question,
