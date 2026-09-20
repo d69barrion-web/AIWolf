@@ -2338,23 +2338,13 @@ if (!childId) {
                     },
 
                     body: JSON.stringify({
+                         question:question,
+                         chapter:currentChapter,
+                         mode:currentMode,
+                         chapterText:currentChapterText,
+                         childId:childId
 
-    question:
-        question,
-
-    chapter:
-        currentChapter,
-
-    mode:
-        currentMode,
-
-    chapterText:
-        currentChapterText,
-
-    childId:
-        childId
-
-})
+                     })
 
                 }
             );
