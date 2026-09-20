@@ -2236,6 +2236,19 @@ if (!user) {
 
 }
 
+    const childId =
+    localStorage.getItem("activeChildId") || "";
+
+if (!childId) {
+
+    setStatus(
+        "👤 Walang napiling active child."
+    );
+
+    return;
+
+}
+
     const question =
         input.value.trim();
 
@@ -2320,19 +2333,22 @@ if (!user) {
 
                     body: JSON.stringify({
 
-                        question:
-                            question,
+    question:
+        question,
 
-                        chapter:
-                            currentChapter,
+    chapter:
+        currentChapter,
 
-                        mode:
-                            currentMode,
+    mode:
+        currentMode,
 
-                        chapterText:
-                            currentChapterText
+    chapterText:
+        currentChapterText,
 
-                    })
+    childId:
+        childId
+
+})
 
                 }
             );
@@ -2391,9 +2407,6 @@ SAVE Q&A TO FIRESTORE FOR ACTIVE CHILD
 const activeChildSelect =
     document.getElementById("activeChildSelect");
 
-const childId =
-    localStorage.getItem("activeChildId") || "";
-    //activeChildSelect ? activeChildSelect.value : "";
 
 let firestoreStatus = "";
 
