@@ -845,21 +845,49 @@ const conversationHistory =
     // ------------------------------------
 
     const input = [
-      {
-        role: "system",
-        content: AIWOLF_INSTRUCTIONS
-      },
-      {
-        role: "user",
-        content:
-          `CHAPTER:\n${chapter || "Unknown"}\n\n` +
-          `MODE:\n${selectedMode}\n\n` +
-          `CHAPTER TEXT:\n` +
-          `${chapterText}\n\n` +
-          `READER QUESTION:\n` +
-          `${question}`
-      }
-    ];
+  {
+    role: "system",
+    content: AIWOLF_INSTRUCTIONS
+  },
+
+  {
+    role: "user",
+    content:
+      `CHAPTER:\n${chapter || "Unknown"}\n\n` +
+      `MODE:\n${selectedMode}\n\n` +
+      `CHAPTER TEXT:\n` +
+      `${chapterText}`
+  }
+];
+
+// ------------------------------------
+// PREVIOUS CONVERSATION HISTORY
+// ------------------------------------
+
+for (const item of conversationHistory) {
+
+  input.push({
+    role: "user",
+    content:
+      `READER:\n${item.question}`
+  });
+
+  input.push({
+    role: "assistant",
+    content:
+      `AIWOLF:\n${item.reply}`
+  });
+}
+
+// ------------------------------------
+// CURRENT READER QUESTION
+// ------------------------------------
+
+input.push({
+  role: "user",
+  content:
+    `READER QUESTION:\n${question}`
+});
 
     // ------------------------------------
     // OPENAI
