@@ -504,6 +504,74 @@ async function requireFirebaseUser(req, res, next) {
   }
 }
 
+// ========================================
+// ADMIN AUTHORIZATION
+// ========================================
+
+const ADMIN_UID = process.env.ADMIN_UID || "";
+
+async function requireAdmin(req, res, next) {
+
+  try {
+
+    const authorization =
+      req.headers.authorization || "";
+
+    const match =
+      authorization.match(/^Bearer (.+)$/);
+
+    if (!match) {
+
+      return res.status(401).json({
+        error: "Missing Firebase ID token."
+      });
+
+    }
+
+    const decodedToken =
+      await firebaseAuth.verifyIdToken(
+        match[1]
+      );
+
+    req.firebaseUser =
+      decodedToken;
+
+    if (!ADMIN_UID) {
+
+      return res.status(500).json({
+        error:
+          "ADMIN_UID is not configured on the server."
+      });
+
+    }
+
+    if (decodedToken.uid !== ADMIN_UID) {
+
+      return res.status(403).json({
+        error:
+          "Admin access denied."
+      });
+
+    }
+
+    next();
+
+  } catch (error) {
+
+    console.error(
+      "Admin authorization error:",
+      error
+    );
+
+    return res.status(401).json({
+      error:
+        "Invalid Firebase ID token."
+    });
+
+  }
+
+}
+
 app.post("/api/parent/profile", requireFirebaseUser, async (req, res) => {
   try {
     const user = req.firebaseUser;
@@ -737,6 +805,107 @@ app.get(
         error: "Could not load the conversation history."
       });
     }
+  }
+);
+
+// ========================================
+// ADMIN — LIST USERS
+// ========================================
+
+app.get(
+  "/api/admin/users",
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const usersResult =
+        await firebaseAuth.listUsers(1000);
+
+      const users =
+        await Promise.all(
+          usersResult.users.map(
+            async (userRecord) => {
+
+              const profileSnapshot =
+                await db
+                  .collection("parents")
+                  .doc(userRecord.uid)
+                  .get();
+
+              const creditSnapshot =
+                await db
+                  .collection("users")
+                  .doc(userRecord.uid)
+                  .get();
+
+              const profile =
+                profileSnapshot.exists
+                  ? profileSnapshot.data()
+                  : {};
+
+              const creditData =
+                creditSnapshot.exists
+                  ? creditSnapshot.data()
+                  : {};
+
+              return {
+
+                uid:
+                  userRecord.uid,
+
+                email:
+                  userRecord.email || null,
+
+                disabled:
+                  userRecord.disabled,
+
+                createdAt:
+                  userRecord.metadata
+                    .creationTime || null,
+
+                lastSignIn:
+                  userRecord.metadata
+                    .lastSignInTime || null,
+
+                role:
+                  profile.role || "user",
+
+                creditLimit:
+                  Number(
+                    creditData.creditLimit || 0
+                  ),
+
+                usedCredits:
+                  Number(
+                    creditData.usedCredits || 0
+                  )
+
+              };
+
+            }
+          )
+        );
+
+      return res.json({
+        ok: true,
+        users
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Admin list users error:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Could not load users."
+      });
+
+    }
+
   }
 );
 
@@ -1001,6 +1170,108 @@ res.json({
 
   }
 });
+
+// ========================================
+// ADMIN — SET USER CREDIT LIMIT
+// ========================================
+
+app.post(
+  "/api/admin/users/:uid/credits",
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const targetUid =
+        req.params.uid;
+
+      const creditLimit =
+        Number(
+          req.body.creditLimit
+        );
+
+      if (
+        !Number.isFinite(creditLimit) ||
+        creditLimit < 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid credit limit."
+        });
+
+      }
+
+      // Make sure the Firebase account exists.
+      await firebaseAuth.getUser(
+        targetUid
+      );
+
+      const creditRef =
+        db
+          .collection("users")
+          .doc(targetUid);
+
+      const existingSnapshot =
+        await creditRef.get();
+
+      const existingData =
+        existingSnapshot.exists
+          ? existingSnapshot.data()
+          : {};
+
+      const usedCredits =
+        Number(
+          existingData.usedCredits || 0
+        );
+
+      await creditRef.set(
+        {
+          creditLimit,
+          usedCredits,
+          updatedAt:
+            new Date().toISOString(),
+          updatedBy:
+            req.firebaseUser.uid
+        },
+        {
+          merge: true
+        }
+      );
+
+      return res.json({
+        ok: true,
+
+        uid:
+          targetUid,
+
+        creditLimit,
+
+        usedCredits,
+
+        remainingCredits:
+          Math.max(
+            0,
+            creditLimit - usedCredits
+          )
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Admin set credits error:",
+        error
+      );
+
+      return res.status(500).json({
+        error:
+          "Could not update credit limit."
+      });
+
+    }
+
+  }
+);
 
 // ========================================
 // OLD CHAT ENDPOINT
