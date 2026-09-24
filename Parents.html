@@ -1120,6 +1120,99 @@ const firebaseConfig = {
 let parentAuth = null;
 let parentDb = null;
 
+
+Ready bro 😄🐺
+
+Sige, ituloy natin. Sabihin mo lang kung alin ang next step na gusto mong gawin sa AIWolf/Render/Firebase, at gagawin natin step-by-step, copy-paste friendly para sa phone mo.
+
+
+Sa ngayon, ang nag-re-reflect sa credits box ng parents.html ay ang mga values sa credits firestore _aiwolf/usage pa rin. Hindi pa ang mga values sa users/uid
+
+Oo bro. 👍 Ibig sabihin hindi pa natin napapalitan ang data source ng Credits Box.
+
+Sa ngayon:
+
+parents.html
+   ↓
+_aiwolf/usage
+   ├── startingCredits
+   ├── totalCost
+   └── estimatedRemainingCredits
+Ang gusto nating maging flow:
+
+parents.html
+   ↓
+users/{uid}
+   ├── creditLimit
+   └── usedCredits
+At doon na manggagaling ang displayed values.
+
+Ang mapping
+Credits Box	users/{uid}
+Starting Credits	creditLimit
+Used	usedCredits
+Estimated Remaining	creditLimit - usedCredits
+So hindi na natin gagamitin ang _aiwolf/usage para sa Credits Box ng bawat parent.
+
+Ang dating function natin ay roughly ganito:
+
+function loadAIWolfCredits() {
+    parentDb.collection("_aiwolf").doc("usage").onSnapshot((doc) => {
+        const data = doc.data() || {};
+
+        document.getElementById("aiWolfStartingCredits").textContent =
+            "$" + Number(data.startingCredits || 0).toFixed(4);
+
+        document.getElementById("aiWolfTotalCost").textContent =
+            "$" + Number(data.totalCost || 0).toFixed(4);
+
+        document.getElementById("aiWolfRemainingCredits").textContent =
+            "$" + Number(data.estimatedRemainingCredits || 0).toFixed(4);
+    });
+}
+Iyan ang kailangang palitan.
+
+Magiging:
+
+function loadAIWolfCredits(uid) {
+    parentDb.collection("users").doc(uid).onSnapshot((doc) => {
+        const data = doc.data() || {};
+
+        const creditLimit = Number(data.creditLimit || 0);
+        const usedCredits = Number(data.usedCredits || 0);
+        const remainingCredits = Math.max(0, creditLimit - usedCredits);
+
+        document.getElementById("aiWolfStartingCredits").textContent =
+            "$" + creditLimit.toFixed(4);
+
+        document.getElementById("aiWolfTotalCost").textContent =
+            "$" + usedCredits.toFixed(4);
+
+        document.getElementById("aiWolfRemainingCredits").textContent =
+            "$" + remainingCredits.toFixed(4);
+    });
+}
+At kung ang authenticated user ay ganito ang existing code:
+
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        loadChildProfiles();
+        loadAIWolfCredits();
+    }
+});
+papalitan natin ng:
+
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        loadChildProfiles();
+        loadAIWolfCredits(user.uid);
+    }
+});
+Pero huwag muna nating i-paste blindly, bro. 😄
+
+Dahil parents.html na mismo ang babaguhin natin, pinakamaganda na ibigay mo sa akin ang current loadAIWolfCredits() at yung onAuthStateChanged portion ng latest parents.html. Iche-check natin ang exact current version para hindi natin maulit yung dating problema na may ibang bahagi ng code na naiwan na tumutukoy sa _aiwolf/usage.
+
+
 function loadAIWolfCredits() {
 
     if (!parentDb) return;
@@ -1171,6 +1264,119 @@ function loadAIWolfCredits() {
             }
         );
 }
+
+function setChildProfileStatus(message) {
+    const status = document.getElementById("childProfileStatus");
+    if (status) status.textContent = message;
+}
+
+/*
+Initialize Firebase after the page loads.
+*/
+
+try {
+    if (typeof firebase !== "undefined") {
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        parentAuth = firebase.auth();
+        parentDb = firebase.firestore();
+
+        parentAuth.onAuthStateChanged(function (user) {
+    showParentSignedIn(user);
+
+    const panel = document.getElementById("childProfilePanel");
+    if (panel) panel.hidden = !user;
+
+    if (user) {
+        loadChildProfiles();
+        loadAIWolfCredits();
+    }
+});
+    } else {
+        setParentAuthStatus(
+            "Hindi na-load ang Firebase SDK. Suriin ang internet connection."
+        );
+    }
+} catch (error) {
+    setParentAuthStatus(
+        "Firebase initialization error: " + error.message
+    );
+}
+
+Yes bro. 👍 Kita na natin exactly kung saan nanggagaling ang credits.
+
+Ang kailangan nating baguhin ay dalawang bahagi lang:
+
+loadAIWolfCredits() — mula _aiwolf/usage → users/{uid}
+
+loadAIWolfCredits(); — dapat ipasa ang authenticated user's uid
+
+Assuming ang fields sa users/{uid} ay:
+
+creditLimit
+usedCredits
+ito ang buong replacement ng dalawang sections na ipinadala mo:
+
+function loadAIWolfCredits(uid) {
+
+    if (!parentDb || !uid) return;
+
+    parentDb
+        .collection("users")
+        .doc(uid)
+        .onSnapshot(
+            function (snapshot) {
+
+                if (!snapshot.exists) {
+                    return;
+                }
+
+                const data = snapshot.data();
+
+                const creditLimit =
+                    Number(data.creditLimit || 0);
+
+                const usedCredits =
+                    Number(data.usedCredits || 0);
+
+                const remainingCredits =
+                    Math.max(
+                        0,
+                        creditLimit - usedCredits
+                    );
+
+                document.getElementById(
+                    "aiWolfStartingCredits"
+                ).textContent =
+                    "$" +
+                    creditLimit.toFixed(2);
+
+                document.getElementById(
+                    "aiWolfTotalCost"
+                ).textContent =
+                    "$" +
+                    usedCredits.toFixed(4);
+
+                document.getElementById(
+                    "aiWolfRemainingCredits"
+                ).textContent =
+                    "$" +
+                    remainingCredits.toFixed(2);
+
+            },
+            function (error) {
+
+                alert(
+                    "AIWolf Credits Error:\n\n" +
+                    error.message
+                );
+
+            }
+        );
+}
+
 
 function setParentAuthStatus(message) {
     const status = document.getElementById("parentAuthStatus");
@@ -1466,6 +1672,151 @@ async function loadChildProfiles() {
 }
 
 
+
+Ready bro 😄🐺
+
+Sige, ituloy natin. Sabihin mo lang kung alin ang next step na gusto mong gawin sa AIWolf/Render/Firebase, at gagawin natin step-by-step, copy-paste friendly para sa phone mo.
+
+
+Sa ngayon, ang nag-re-reflect sa credits box ng parents.html ay ang mga values sa credits firestore _aiwolf/usage pa rin. Hindi pa ang mga values sa users/uid
+
+Oo bro. 👍 Ibig sabihin hindi pa natin napapalitan ang data source ng Credits Box.
+
+Sa ngayon:
+
+parents.html
+   ↓
+_aiwolf/usage
+   ├── startingCredits
+   ├── totalCost
+   └── estimatedRemainingCredits
+Ang gusto nating maging flow:
+
+parents.html
+   ↓
+users/{uid}
+   ├── creditLimit
+   └── usedCredits
+At doon na manggagaling ang displayed values.
+
+Ang mapping
+Credits Box	users/{uid}
+Starting Credits	creditLimit
+Used	usedCredits
+Estimated Remaining	creditLimit - usedCredits
+So hindi na natin gagamitin ang _aiwolf/usage para sa Credits Box ng bawat parent.
+
+Ang dating function natin ay roughly ganito:
+
+function loadAIWolfCredits() {
+    parentDb.collection("_aiwolf").doc("usage").onSnapshot((doc) => {
+        const data = doc.data() || {};
+
+        document.getElementById("aiWolfStartingCredits").textContent =
+            "$" + Number(data.startingCredits || 0).toFixed(4);
+
+        document.getElementById("aiWolfTotalCost").textContent =
+            "$" + Number(data.totalCost || 0).toFixed(4);
+
+        document.getElementById("aiWolfRemainingCredits").textContent =
+            "$" + Number(data.estimatedRemainingCredits || 0).toFixed(4);
+    });
+}
+Iyan ang kailangang palitan.
+
+Magiging:
+
+function loadAIWolfCredits(uid) {
+    parentDb.collection("users").doc(uid).onSnapshot((doc) => {
+        const data = doc.data() || {};
+
+        const creditLimit = Number(data.creditLimit || 0);
+        const usedCredits = Number(data.usedCredits || 0);
+        const remainingCredits = Math.max(0, creditLimit - usedCredits);
+
+        document.getElementById("aiWolfStartingCredits").textContent =
+            "$" + creditLimit.toFixed(4);
+
+        document.getElementById("aiWolfTotalCost").textContent =
+            "$" + usedCredits.toFixed(4);
+
+        document.getElementById("aiWolfRemainingCredits").textContent =
+            "$" + remainingCredits.toFixed(4);
+    });
+}
+At kung ang authenticated user ay ganito ang existing code:
+
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        loadChildProfiles();
+        loadAIWolfCredits();
+    }
+});
+papalitan natin ng:
+
+firebase.auth().onAuthStateChanged(user => {
+    if (user) {
+        loadChildProfiles();
+        loadAIWolfCredits(user.uid);
+    }
+});
+Pero huwag muna nating i-paste blindly, bro. 😄
+
+Dahil parents.html na mismo ang babaguhin natin, pinakamaganda na ibigay mo sa akin ang current loadAIWolfCredits() at yung onAuthStateChanged portion ng latest parents.html. Iche-check natin ang exact current version para hindi natin maulit yung dating problema na may ibang bahagi ng code na naiwan na tumutukoy sa _aiwolf/usage.
+
+
+function loadAIWolfCredits() {
+
+    if (!parentDb) return;
+
+    parentDb
+        .collection("_aiwolf")
+        .doc("usage")
+        .onSnapshot(
+            function (snapshot) {
+
+                if (!snapshot.exists) {
+                    return;
+                }
+
+                const data = snapshot.data();
+
+                document.getElementById(
+                    "aiWolfStartingCredits"
+                ).textContent =
+                    "$" +
+                    Number(
+                        data.startingCredits || 0
+                    ).toFixed(2);
+
+                document.getElementById(
+                    "aiWolfTotalCost"
+                ).textContent =
+                    "$" +
+                    Number(
+                        data.totalCost || 0
+                    ).toFixed(4);
+
+                document.getElementById(
+                    "aiWolfRemainingCredits"
+                ).textContent =
+                    "$" +
+                    Number(
+                        data.estimatedRemainingCredits || 0
+                    ).toFixed(2);
+
+            },
+            function (error) {
+
+                alert(
+                    "AIWolf Credits Error:\n\n" +
+                    error.message
+                );
+
+            }
+        );
+}
+
 function setChildProfileStatus(message) {
     const status = document.getElementById("childProfileStatus");
     if (status) status.textContent = message;
@@ -1504,6 +1855,134 @@ try {
     setParentAuthStatus(
         "Firebase initialization error: " + error.message
     );
+}
+
+Yes bro. 👍 Kita na natin exactly kung saan nanggagaling ang credits.
+
+Ang kailangan nating baguhin ay dalawang bahagi lang:
+
+loadAIWolfCredits() — mula _aiwolf/usage → users/{uid}
+
+loadAIWolfCredits(); — dapat ipasa ang authenticated user's uid
+
+Assuming ang fields sa users/{uid} ay:
+
+creditLimit
+usedCredits
+ito ang buong replacement ng dalawang sections na ipinadala mo:
+
+function loadAIWolfCredits(uid) {
+
+    if (!parentDb || !uid) return;
+
+    parentDb
+        .collection("users")
+        .doc(uid)
+        .onSnapshot(
+            function (snapshot) {
+
+                if (!snapshot.exists) {
+                    return;
+                }
+
+                const data = snapshot.data();
+
+                const creditLimit =
+                    Number(data.creditLimit || 0);
+
+                const usedCredits =
+                    Number(data.usedCredits || 0);
+
+                const remainingCredits =
+                    Math.max(
+                        0,
+                        creditLimit - usedCredits
+                    );
+
+                document.getElementById(
+                    "aiWolfStartingCredits"
+                ).textContent =
+                    "$" +
+                    creditLimit.toFixed(2);
+
+                document.getElementById(
+                    "aiWolfTotalCost"
+                ).textContent =
+                    "$" +
+                    usedCredits.toFixed(4);
+
+                document.getElementById(
+                    "aiWolfRemainingCredits"
+                ).textContent =
+                    "$" +
+                    remainingCredits.toFixed(2);
+
+            },
+            function (error) {
+
+                alert(
+                    "AIWolf Credits Error:\n\n" +
+                    error.message
+                );
+
+            }
+        );
+}
+
+function setChildProfileStatus(message) {
+    const status = document.getElementById("childProfileStatus");
+    if (status) status.textContent = message;
+}
+
+/*
+Initialize Firebase after the page loads.
+*/
+
+try {
+    if (typeof firebase !== "undefined") {
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        parentAuth = firebase.auth();
+        parentDb = firebase.firestore();
+
+        parentAuth.onAuthStateChanged(function (user) {
+
+            showParentSignedIn(user);
+
+            const panel =
+                document.getElementById("childProfilePanel");
+
+            if (panel) {
+                panel.hidden = !user;
+            }
+
+            if (user) {
+
+                loadChildProfiles();
+
+                loadAIWolfCredits(user.uid);
+            }
+
+        });
+
+    } else {
+
+        setParentAuthStatus(
+            "Hindi na-load ang Firebase SDK. Suriin ang internet connection."
+        );
+
+    }
+
+} catch (error) {
+
+    setParentAuthStatus(
+        "Firebase initialization error: " +
+        error.message
+    );
+
 }
 
 /*
