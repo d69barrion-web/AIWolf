@@ -2369,6 +2369,7 @@ const response =
         if (!response.ok) {
 
             throw new Error(
+                data.message ||
                 data.error ||
                 "AIWolf server error."
             );
