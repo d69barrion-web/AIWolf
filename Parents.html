@@ -1120,56 +1120,23 @@ const firebaseConfig = {
 let parentAuth = null;
 let parentDb = null;
 
-function loadAIWolfCredits() {
+function loadAIWolfCredits(uid) {
+    parentDb.collection("users").doc(uid).onSnapshot((doc) => {
+        const data = doc.data() || {};
 
-    if (!parentDb) return;
+        const creditLimit = Number(data.creditLimit || 0);
+        const usedCredits = Number(data.usedCredits || 0);
+        const remainingCredits = Math.max(0, creditLimit - usedCredits);
 
-    parentDb
-        .collection("_aiwolf")
-        .doc("usage")
-        .onSnapshot(
-            function (snapshot) {
+        document.getElementById("aiWolfStartingCredits").textContent =
+            "$" + creditLimit.toFixed(4);
 
-                if (!snapshot.exists) {
-                    return;
-                }
+        document.getElementById("aiWolfTotalCost").textContent =
+            "$" + usedCredits.toFixed(4);
 
-                const data = snapshot.data();
-
-                document.getElementById(
-                    "aiWolfStartingCredits"
-                ).textContent =
-                    "$" +
-                    Number(
-                        data.startingCredits || 0
-                    ).toFixed(2);
-
-                document.getElementById(
-                    "aiWolfTotalCost"
-                ).textContent =
-                    "$" +
-                    Number(
-                        data.totalCost || 0
-                    ).toFixed(4);
-
-                document.getElementById(
-                    "aiWolfRemainingCredits"
-                ).textContent =
-                    "$" +
-                    Number(
-                        data.estimatedRemainingCredits || 0
-                    ).toFixed(2);
-
-            },
-            function (error) {
-
-                alert(
-                    "AIWolf Credits Error:\n\n" +
-                    error.message
-                );
-
-            }
-        );
+        document.getElementById("aiWolfRemainingCredits").textContent =
+            "$" + remainingCredits.toFixed(4);
+    });
 }
 
 function setParentAuthStatus(message) {
@@ -1492,7 +1459,7 @@ try {
 
     if (user) {
         loadChildProfiles();
-        loadAIWolfCredits();
+        loadAIWolfCredits(user.uid);
     }
 });
     } else {
