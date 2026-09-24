@@ -274,6 +274,73 @@ async function recordAIWolfUsage(
 }
 
 // ========================================
+// SAVE PER-USER AIWOLF CREDIT USAGE
+// ========================================
+
+async function recordUserAIWolfUsage(
+  uid,
+  inputTokens,
+  outputTokens
+) {
+
+  if (!uid) {
+    throw new Error(
+      "Missing Firebase UID for AIWolf credit tracking."
+    );
+  }
+
+  const cost =
+    calculateAIWolfCost(
+      inputTokens,
+      outputTokens
+    );
+
+  const userRef =
+    db
+      .collection("users")
+      .doc(uid);
+
+  await db.runTransaction(async (transaction) => {
+
+    const snapshot =
+      await transaction.get(userRef);
+
+    const data =
+      snapshot.exists
+        ? snapshot.data()
+        : {};
+
+    const oldUsedCredits =
+      Number(
+        data.usedCredits || 0
+      );
+
+    const newUsedCredits =
+      oldUsedCredits + cost;
+
+    transaction.set(
+      userRef,
+      {
+        usedCredits:
+          newUsedCredits,
+
+        updatedAt:
+          new Date().toISOString()
+      },
+      {
+        merge: true
+      }
+    );
+
+  });
+
+  return {
+    currentRequestCost: cost,
+    usedCredits: true
+  };
+}
+
+// ========================================
 // AIWOLF COST CALCULATOR
 // ========================================
 
@@ -1126,6 +1193,13 @@ const creditUsage =
     outputTokens,
     totalTokens
   );
+    
+await recordUserAIWolfUsage(
+  req.firebaseUser.uid,
+  inputTokens,
+  outputTokens
+);
+    
 // ------------------------------------
 // RESPONSE
 // ------------------------------------
