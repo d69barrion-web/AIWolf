@@ -1073,6 +1073,46 @@ if (!childSnapshot.exists) {
   });
 }
 
+// ------------------------------------
+// AIWOLF CREDIT CHECK
+// ------------------------------------
+
+const userUid = req.firebaseUser.uid;
+
+const userCreditRef = db
+  .collection("users")
+  .doc(userUid);
+
+const userCreditSnapshot =
+  await userCreditRef.get();
+
+const userCreditData =
+  userCreditSnapshot.exists
+    ? userCreditSnapshot.data()
+    : {};
+
+const creditLimit =
+  Number(userCreditData.creditLimit || 0);
+
+const usedCredits =
+  Number(userCreditData.usedCredits || 0);
+
+// Block only when the allocated credits
+// have already been consumed.
+if (usedCredits >= creditLimit) {
+
+  return res.status(402).json({
+    error: "AIWolf credits exhausted.",
+    message:
+      "Ubos na ang AIWolf credits para sa account na ito.",
+    creditLimit,
+    usedCredits,
+    remainingCredits: 0,
+    remaining: rateLimit.remaining
+  });
+
+}
+
 // Get recent conversations for this child.
 const conversationSnapshot =
   await childRef
