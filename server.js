@@ -1097,14 +1097,28 @@ const creditLimit =
 const usedCredits =
   Number(userCreditData.usedCredits || 0);
 
-// Block only when the allocated credits
-// have already been consumed.
+// No credits have been allocated yet.
+if (creditLimit <= 0 && usedCredits <= 0) {
+
+  return res.status(402).json({
+    error: "No AIWolf credits allocated.",
+    message:
+      "Wala pang AIWolf credits ang account na ito.",
+    creditLimit,
+    usedCredits,
+    remainingCredits: 0,
+    remaining: rateLimit.remaining
+  });
+
+}
+
+// Credits have already been consumed.
 if (usedCredits >= creditLimit) {
 
   return res.status(402).json({
     error: "AIWolf credits exhausted.",
     message:
-      "Ubos na ang AIWolf credits para sa account na ito.",
+      "Wala nang AIWolf credits ang account na ito.",
     creditLimit,
     usedCredits,
     remainingCredits: 0,
