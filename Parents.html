@@ -1119,9 +1119,9 @@ const firebaseConfig = {
 
 let parentAuth = null;
 let parentDb = null;
-let uid = firebase.auth().currentUser.uid;
     
-function loadAIWolfCredits(uid) {
+function loadAIWolfCredits() {
+    const uid = firebase.auth().currentUser.uid;
     parentDb.collection("users").doc(uid).onSnapshot((doc) => {
         const data = doc.data() || {};
 
