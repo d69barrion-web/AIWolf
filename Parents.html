@@ -2209,12 +2209,10 @@ async function sendQuestion() {
             "questionInput"
         );
 
-
     const sendButton =
         document.getElementById(
             "sendButton"
         );
-
 
     const question =
         input.value.trim();
@@ -2228,7 +2226,58 @@ async function sendQuestion() {
 
 
     /*
-    Make sure chapter has loaded
+    ------------------------------------------
+    CHECK FIREBASE SIGN-IN
+    ------------------------------------------
+    */
+
+    const user =
+        parentAuth &&
+        parentAuth.currentUser;
+
+    if (!user) {
+
+        setStatus(
+            "🔒 Please sign in muna bilang parent bago makausap si AIWolf."
+        );
+
+        return;
+
+    }
+
+
+    /*
+    ------------------------------------------
+    GET ACTIVE CHILD
+    ------------------------------------------
+    */
+
+    const activeChildSelect =
+        document.getElementById(
+            "activeChildSelect"
+        );
+
+    const childId =
+        activeChildSelect
+            ? activeChildSelect.value
+            : "";
+
+
+    if (!childId) {
+
+        setStatus(
+            "👤 Pumili muna ng active child bago makausap si AIWolf."
+        );
+
+        return;
+
+    }
+
+
+    /*
+    ------------------------------------------
+    MAKE SURE CHAPTER HAS LOADED
+    ------------------------------------------
     */
 
     if (!currentChapterText) {
@@ -2243,7 +2292,38 @@ async function sendQuestion() {
 
 
     /*
-    Display user's question
+    ------------------------------------------
+    GET FIREBASE ID TOKEN
+    ------------------------------------------
+    */
+
+    let idToken;
+
+    try {
+
+        idToken =
+            await user.getIdToken();
+
+    } catch (tokenError) {
+
+        console.error(
+            "Firebase token error:",
+            tokenError
+        );
+
+        setStatus(
+            "🔒 Hindi makuha ang Firebase ID token. Mag-sign in ulit."
+        );
+
+        return;
+
+    }
+
+
+    /*
+    ------------------------------------------
+    DISPLAY USER QUESTION
+    ------------------------------------------
     */
 
     addMessage(
@@ -2259,14 +2339,18 @@ async function sendQuestion() {
 
 
     /*
-    Clear input
+    ------------------------------------------
+    CLEAR INPUT
+    ------------------------------------------
     */
 
     input.value = "";
 
 
     /*
-    Disable button
+    ------------------------------------------
+    DISABLE BUTTON
+    ------------------------------------------
     */
 
     sendButton.disabled =
@@ -2280,49 +2364,56 @@ async function sendQuestion() {
 
     try {
 
-    const idToken =
-        await user.getIdToken();
+        /*
+        ------------------------------------------
+        SEND QUESTION TO AIWOLF
+        ------------------------------------------
+        */
 
-    const response =
-        await fetch(
-            "https://mychatbot-ct9m.onrender.com/api/aiwolf",
-            {
-                method: "POST",
+        const response =
+            await fetch(
+                "https://mychatbot-ct9m.onrender.com/api/aiwolf",
+                {
 
-                headers: {
-                    "Authorization":
-                        "Bearer " + idToken,
+                    method: "POST",
 
-                    "Content-Type":
-                        "application/json"
-                },
+                    headers: {
 
-                body: JSON.stringify({
+                        "Authorization":
+                            "Bearer " + idToken,
 
-                    question:
-                        question,
+                        "Content-Type":
+                            "application/json"
 
-                    chapter:
-                        currentChapter,
+                    },
 
-                    mode:
-                        currentMode,
+                    body: JSON.stringify({
 
-                    chapterText:
-                        currentChapterText,
+                        question:
+                            question,
 
-                    childId:
-                        childId
+                        chapter:
+                            currentChapter,
 
-                })
-            }
-        );
+                        mode:
+                            currentMode,
+
+                        chapterText:
+                            currentChapterText,
+
+                        childId:
+                            childId
+
+                    })
+
+                }
+            );
 
 
         const data =
             await response.json();
 
-    
+
         /*
         ------------------------------------------
         SERVER ERROR
@@ -2362,80 +2453,112 @@ async function sendQuestion() {
             aiReply
         );
 
+
         /*
-------------------------------------------
-SAVE Q&A TO FIRESTORE FOR ACTIVE CHILD
-------------------------------------------
-*/
+        ------------------------------------------
+        SAVE Q&A TO FIRESTORE
+        ------------------------------------------
+        */
 
-const user =
-    parentAuth && parentAuth.currentUser;
+        let firestoreStatus = "";
 
-const activeChildSelect =
-    document.getElementById("activeChildSelect");
 
-const childId =
-    activeChildSelect ? activeChildSelect.value : "";
+        try {
 
-let firestoreStatus = "";
+            const saveUrl =
+                "https://mychatbot-ct9m.onrender.com/api/parent/children/" +
+                encodeURIComponent(childId) +
+                "/conversations";
 
-if (!user) {
-    firestoreStatus =
-        "Hindi naka-sign in ang parent; hindi na-save sa Firestore.";
 
-} else if (!childId) {
-    firestoreStatus =
-        "Walang napiling active child; hindi na-save sa Firestore.";
+            const saveResponse =
+                await fetch(
+                    saveUrl,
+                    {
 
-} else {
-    try {
-        const idToken = await user.getIdToken();
+                        method: "POST",
 
-        const saveUrl =
-            "https://mychatbot-ct9m.onrender.com/api/parent/children/" +
-            encodeURIComponent(childId) +
-            "/conversations";
+                        headers: {
 
-        const saveResponse = await fetch(saveUrl, {
-            method: "POST",
-            headers: {
-                "Authorization": "Bearer " + idToken,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                chapter: currentChapter,
-                question: question,
-                reply: aiReply
-            })
-        });
+                            "Authorization":
+                                "Bearer " + idToken,
 
-        const saveData = await saveResponse.json();
+                            "Content-Type":
+                                "application/json"
 
-        if (!saveResponse.ok) {
-            throw new Error(
-                saveData.error ||
-                saveData.message ||
-                JSON.stringify(saveData) ||
-                "Hindi na-save sa Firestore."
+                        },
+
+                        body: JSON.stringify({
+
+                            chapter:
+                                currentChapter,
+
+                            question:
+                                question,
+
+                            reply:
+                                aiReply
+
+                        })
+
+                    }
+                );
+
+
+            const saveData =
+                await saveResponse.json();
+
+
+            if (!saveResponse.ok) {
+
+                throw new Error(
+                    saveData.error ||
+                    saveData.message ||
+                    JSON.stringify(saveData) ||
+                    "Hindi na-save sa Firestore."
+                );
+
+            }
+
+
+            firestoreStatus =
+                "Na-save ang conversation sa Firestore.";
+
+
+            console.log(
+                "Q&A saved to Firestore:",
+                saveData
             );
+
+
+        } catch (saveError) {
+
+            console.error(
+                "Firestore save error:",
+                saveError
+            );
+
+
+            firestoreStatus =
+                "Hindi na-save sa Firestore: " +
+                saveError.message;
+
         }
 
-        firestoreStatus =
-            "Na-save ang conversation sa Firestore.";
 
-        console.log("Q&A saved to Firestore:", saveData);
+        /*
+        ------------------------------------------
+        FINAL STATUS
+        ------------------------------------------
+        */
 
-    } catch (saveError) {
-        console.error("Firestore save error:", saveError);
+        setStatus(
+            "🐺 AIWolf — " +
+            currentMode +
+            " mode. " +
+            firestoreStatus
+        );
 
-        firestoreStatus =
-            "Hindi na-save sa Firestore: " + saveError.message;
-    }
-}
-
-setStatus(
-    "🐺 AIWolf — " + currentMode + " mode. " + firestoreStatus
-);
 
     } catch (error) {
 
@@ -2455,6 +2578,7 @@ setStatus(
             `Error: ${error.message}`
         );
 
+
     } finally {
 
         sendButton.disabled =
@@ -2465,8 +2589,7 @@ setStatus(
     }
 
 }
-
-
+        
 /*
 ==================================================
 ENTER KEY
