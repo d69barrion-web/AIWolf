@@ -810,6 +810,136 @@ app.post(
   }
 );
 
+// ========================================
+// SAVE ONE AIWOLF QUESTION + REPLY
+// TO PARENT'S CLOUD HISTORY
+// ========================================
+
+app.post(
+  "/api/parent/conversations",
+  requireFirebaseUser,
+  async (req, res) => {
+
+    try {
+
+      const parentUid =
+        req.firebaseUser.uid;
+
+      const chapter =
+        Number(req.body.chapter);
+
+      const question =
+        typeof req.body.question === "string"
+          ? req.body.question.trim()
+          : "";
+
+      const reply =
+        typeof req.body.reply === "string"
+          ? req.body.reply.trim()
+          : "";
+
+      // ------------------------------------
+      // VALIDATE CHAPTER
+      // ------------------------------------
+
+      if (
+        !Number.isInteger(chapter) ||
+        chapter < 1 ||
+        chapter > 100
+      ) {
+
+        return res.status(400).json({
+          error: "Invalid chapter number."
+        });
+
+      }
+
+      // ------------------------------------
+      // VALIDATE QUESTION
+      // ------------------------------------
+
+      if (
+        !question ||
+        question.length > 5000
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Question must be 1 to 5000 characters."
+        });
+
+      }
+
+      // ------------------------------------
+      // VALIDATE AIWOLF REPLY
+      // ------------------------------------
+
+      if (
+        !reply ||
+        reply.length > 20000
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Reply must be 1 to 20000 characters."
+        });
+
+      }
+
+      // ------------------------------------
+      // PARENT CONVERSATION COLLECTION
+      // ------------------------------------
+
+      const conversationRef =
+        await db
+          .collection("parents")
+          .doc(parentUid)
+          .collection("parentConversations")
+          .add({
+
+            chapter,
+
+            question,
+
+            reply,
+
+            createdAt:
+              new Date().toISOString()
+
+          });
+
+      // ------------------------------------
+      // SUCCESS
+      // ------------------------------------
+
+      return res.status(201).json({
+
+        ok: true,
+
+        conversationId:
+          conversationRef.id
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Save Parent AIWolf conversation error:",
+        error
+      );
+
+      return res.status(500).json({
+
+        error:
+          "Could not save the parent conversation."
+
+      });
+
+    }
+
+  }
+);
+
 // GET AIWOLF CONVERSATIONS FOR ONE CHILD
 app.get(
   "/api/parent/children/:childId/conversations",
