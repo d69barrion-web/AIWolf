@@ -22,6 +22,8 @@ Ang isang maliit na bata ay maaaring magtanong nito nang dalawampung beses sa ii
 
 Minsan, nakakapagod din para sa mga matatanda.
 
+<img src="dahil_sinabi.png" style="width: 100%; max-width: 300px; height: auto;">
+
 “Dahil sinabi ko!”
 
 “Dahil iyon ang patakaran!”
