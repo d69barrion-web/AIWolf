@@ -681,87 +681,74 @@ footer {
 
         
 <!-- AIWolf Credits -->
-              <div id="aiWolfCreditsBox" style="
-                   margin: 15px 0;
-                   padding: 15px;
-                   border: 1px solid #ccc;
-                   border-radius: 10px;
-                   background: #303030;
-                   ">
-                   <h3 style="margin-top: 0;">🐺 AIWolf Credits</h3>
-
-                   <div>
-                        Starting Credits:
-                        <strong id="aiWolfStartingCredits">$0.00</strong>
-                   </div>
-                   <div>
-                        Used:
-                        <strong id="aiWolfTotalCost">$0.00</strong>
-                   </div>
-                   <div>
-                        Estimated Remaining:
-                        <strong id="aiWolfRemainingCredits">$0.00</strong>
-                   </div>
-              </div>
+<div id="aiWolfCreditsBox" style="
+    margin: 15px 0;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background: #303030;
+    ">
+    <h3 style="margin-top: 0;">🐺 AIWolf Credits</h3>
+    <div>
+        Starting Credits: 
+        <strong id="aiWolfStartingCredits">$0.00</strong>
+    </div>
+    <div>
+        Used:
+        <strong id="aiWolfTotalCost">$0.00</strong>
+    </div>
+    <div>
+        Estimated Remaining:
+        <strong id="aiWolfRemainingCredits">$0.00</strong>
+    </div>
+</div>
         
-              <!-- CHILD PROFILE -->
-              <div class="parent-account" id="childProfilePanel" hidden>
-
-              
-    
-              <h3>👧 Child Profile</h3>
-
-              <p>
-                 Gumawa ng profile gamit ang palayaw.
-                 Huwag munang ilagay ang buong pangalan o birthday.
-              </p>
-
-              <label for="childNickname">Palayaw</label>
-
-              <input
-                  id="childNickname"
-                  type="text"
-                  maxlength="40"
-                  placeholder="Hal. Angel"
-              >
-
-              <label for="childGrade">Grade level (optional)</label>
-
-              <input
-                  id="childGrade"
-                  type="text"
-                  maxlength="30"
-                  placeholder="Hal. Grade 5"
-              >
-
-              <div class="parent-account-buttons">
-                  <button 
-                       type="button"
-                       id="createChildButton"
-                       onclick="createChildProfile()"
-                       >Create child profile
-                  </button>
-              </div>
-
-              <p
+<!-- CHILD PROFILE -->
+    <div class="parent-account" id="childProfilePanel" hidden>
+        <h3>👧 Child Profile</h3>
+        <p>
+            Gumawa ng profile gamit ang palayaw.
+            Huwag munang ilagay ang buong pangalan o birthday.
+        </p>
+        <label for="childNickname">Palayaw</label>
+        <input
+            id="childNickname"
+            type="text"
+            maxlength="40"
+            placeholder="Hal. Angel"
+        >
+        <label for="childGrade">Grade level (optional)</label>
+        <input
+            id="childGrade"
+            type="text"
+            maxlength="30"
+            placeholder="Hal. Grade 5"
+        >
+        <div class="parent-account-buttons">
+        <button 
+            type="button"
+            id="createChildButton"
+            onclick="createChildProfile()"
+                >Create child profile
+        </button>
+        </div>
+             <p
                  id="childProfileStatus"
                  aria-live="polite">
               </p>
 
-
-              <!-- ACTIVE CHILD -->
-              <label for="activeChildSelect">
-                   Active child:
-              </label>
-
-              <select id="activeChildSelect">
-                    <option value="">
-                        -- Select a child --
-                    </option>
-              </select>
-
-              <div id="childProfileList"></div>
-
+<!-- ACTIVE CHILD -->
+        <label for="activeChildSelect">
+            Active child:
+        </label>
+        <select id="activeChildSelect">
+            <option value="">
+                -- Select a child --
+            </option>
+        </select>
+        <div id="childProfileList"></div>
+    </div>
+    
               <!-- PARENT CONVERSATION VIEWER -->
               <div id="parentConversationViewer" style="margin-top: 25px;">
                    <h3>🐺 AIWolf Conversation History</h3>
