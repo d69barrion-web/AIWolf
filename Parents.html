@@ -2869,9 +2869,12 @@ questionSection.style.marginBottom =
 const questionLabel =
     document.createElement("strong");
 
+        if (childId) {
 questionLabel.textContent =
     "👧 Child's question";
-
+        }else{
+questionLabel.textContent = "Me";
+        }
 questionLabel.style.display =
     "block";
 
