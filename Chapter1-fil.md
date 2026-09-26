@@ -22,7 +22,7 @@ Ang isang maliit na bata ay maaaring magtanong nito nang dalawampung beses sa ii
 
 Minsan, nakakapagod din para sa mga matatanda.
 
-<img src="dahil_sinabi.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="images/dahil_sinabi.png" style="width: 100%; max-width: 300px; height: auto;">
 
 “Dahil sinabi ko!”
 
@@ -56,7 +56,7 @@ Maaari kang hindi sumang-ayon nang hindi nagiging bastos.
 
 Maaari mong kuwestiyunin ang isang ideya habang iginagalang pa rin ang taong nagsabi nito.
 
-<img src="dakilang_tanong.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="images/dakilang_tanong.png" style="width: 100%; max-width: 300px; height: auto;">
 
 Sa katunayan, marami sa pinakamahahalagang tuklas sa kasaysayan ng tao ay nagsimula sa isang taong nagtanong ng bagay na hindi pa naisip itanong ng iba.
 
@@ -73,7 +73,7 @@ Ang mausisang isip ay hindi basta tinatanggap ang mundo kung ano lamang ito sa u
 Mas malalim itong tumitingin.
 
 ---
-<img src="lobo_kagubatan.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="images/lobo_kagubatan.png" style="width: 100%; max-width: 300px; height: auto;">
 
 ### 🐺 ANG LOBO AY HINDI BASTA SUMUSUNOD
 
@@ -117,7 +117,7 @@ Ang kailangan mong gawin ay **mag-isip.**
 
 ### APAT NA SALITANG MAKAPAGPAPABAGO SA PARAAN NG PAG-IISIP MO
 
-<img src="apat_na_salita.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="images/apat_na_salita.png" style="width: 100%; max-width: 300px; height: auto;">
 
 Kapag nakaharap ka sa isang ideya, huwag kang huminto sa:
 
@@ -149,7 +149,7 @@ Nagiging mapanuri ka.
 
 ## PERO MAY ISANG BITAG
 
-<img src="bitag.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="images/bitag.png" style="width: 100%; max-width: 300px; height: auto;">
 
 May isa pang uri ng taong nagtatanong.
 
@@ -163,7 +163,7 @@ Katigasan iyon ng ulo.
 
 Ang isang tunay na nag-iisip ay handang makinig.
 
-<img src="nagbabago_pananaw.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="images/nagbabago_pananaw.png" style="width: 100%; max-width: 300px; height: auto;">
 
 Kapag may nagbigay sa iyo ng magandang dahilan, pag-isipan mo ito.
 
@@ -177,7 +177,7 @@ Nagtatanong ka ng **“Bakit?”** dahil gusto mong maunawaan.
 
 # ISANG MUNTING KUWENTO
 
-<img src="mia_anna.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="images/mia_anna.png" style="width: 100%; max-width: 300px; height: auto;">
 
 Pauwi na galing paaralan sina Mia at ang kaibigan niyang si Anna.
 
@@ -223,7 +223,7 @@ sa:
 
 # PAG-ISIPAN MO
 
-<img src="lobo_tupa.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="images/lobo_tupa.png" style="width: 100%; max-width: 300px; height: auto;">
 
 Isipin mong lahat ng kaibigan mo ay nagsasabing:
 
