@@ -1,6 +1,4 @@
-# KABANATA 1
-
-# BAKIT?
+![bakit_bata.png](bakit_bata.png)
 
 ### Pinakamatalinong Tanong na Maaaring Itanong ng Isang Bata
 
