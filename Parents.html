@@ -2568,10 +2568,7 @@ async function loadChildConversations() {
         return;
     }*/
 
-    if (
-    currentMode !== "parent" &&
-    !childId
-) {
+    if (!childId && currentMode !== "parent") {
 
     status.textContent =
         "Pumili ng child para makita ang conversation history.";
@@ -2604,17 +2601,21 @@ async function loadChildConversations() {
 
         let conversationUrl;
 
-if (currentMode === "parent") {
+if (childId) {
 
-    conversationUrl =
-        "https://mychatbot-ct9m.onrender.com/api/parent/conversations";
-
-} else {
+    // CHILD CONVERSATION HISTORY
 
     conversationUrl =
         "https://mychatbot-ct9m.onrender.com/api/parent/children/" +
         encodeURIComponent(childId) +
         "/conversations";
+
+} else {
+
+    // PARENT CONVERSATION HISTORY
+
+    conversationUrl =
+        "https://mychatbot-ct9m.onrender.com/api/parent/conversations";
 
 }
 
