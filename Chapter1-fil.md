@@ -73,6 +73,7 @@ Ang mausisang isip ay hindi basta tinatanggap ang mundo kung ano lamang ito sa u
 Mas malalim itong tumitingin.
 
 ---
+<img src="lobo_kagubatan.png" style="width: 100%; max-width: 300px; height: auto;">
 
 ### 🐺 ANG LOBO AY HINDI BASTA SUMUSUNOD
 
@@ -115,6 +116,8 @@ Ang kailangan mong gawin ay **mag-isip.**
 ---
 
 ### APAT NA SALITANG MAKAPAGPAPABAGO SA PARAAN NG PAG-IISIP MO
+
+<img src="apat_na_salita.png" style="width: 100%; max-width: 300px; height: auto;">
 
 Kapag nakaharap ka sa isang ideya, huwag kang huminto sa:
 
