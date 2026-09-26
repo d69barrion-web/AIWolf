@@ -149,6 +149,8 @@ Nagiging mapanuri ka.
 
 ## PERO MAY ISANG BITAG
 
+<img src="bitag.png" style="width: 100%; max-width: 300px; height: auto;">
+
 May isa pang uri ng taong nagtatanong.
 
 Kinukuwestiyon niya ang lahat—pero hindi naman talaga niya gustong marinig ang sagot.
