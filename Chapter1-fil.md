@@ -163,6 +163,8 @@ Katigasan iyon ng ulo.
 
 Ang isang tunay na nag-iisip ay handang makinig.
 
+<img src="nagbabago_pananaw.png" style="width: 100%; max-width: 300px; height: auto;">
+
 Kapag may nagbigay sa iyo ng magandang dahilan, pag-isipan mo ito.
 
 Kapag napatunayang mali ka, baguhin mo ang iyong pananaw.
@@ -174,6 +176,8 @@ Nagtatanong ka ng **“Bakit?”** dahil gusto mong maunawaan.
 ---
 
 # ISANG MUNTING KUWENTO
+
+<img src="mia_anna.png" style="width: 100%; max-width: 300px; height: auto;">
 
 Pauwi na galing paaralan sina Mia at ang kaibigan niyang si Anna.
 
@@ -218,6 +222,8 @@ sa:
 ---
 
 # PAG-ISIPAN MO
+
+<img src="lobo_tupa.png" style="width: 100%; max-width: 300px; height: auto;">
 
 Isipin mong lahat ng kaibigan mo ay nagsasabing:
 
