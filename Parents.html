@@ -761,11 +761,11 @@ footer {
 
               <!-- PARENT CONVERSATION VIEWER -->
               <div id="parentConversationViewer" style="margin-top: 25px;">
-                   <h3>🐺 AIWolf Learning History</h3>
+                   <h3>🐺 AIWolf Conversation History</h3>
                    <p
                         id="conversationViewerStatus"
                         aria-live="polite"
-                        >Pumili ng child para makita ang learning history.
+                        >Handa na ang AIWolf conversation history.
                    </p>
 
     
@@ -1356,6 +1356,7 @@ try {
     if (user) {
         loadChildProfiles();
         loadAIWolfCredits();
+        loadChildConversations();
     }
 });
     } else {
@@ -2559,13 +2560,24 @@ async function loadChildConversations() {
         return;
     }
 
-    if (!childId) {
+    /*if (!childId) {
 
         status.textContent =
             "Pumili ng child para makita ang conversation history.";
 
         return;
-    }
+    }*/
+
+    if (
+    currentMode !== "parent" &&
+    !childId
+) {
+
+    status.textContent =
+        "Pumili ng child para makita ang conversation history.";
+
+    return;
+}
 
     status.textContent =
         "⏳ Loading conversation history...";
@@ -2575,7 +2587,7 @@ async function loadChildConversations() {
         const idToken =
             await user.getIdToken();
 
-        const response =
+        /*const response =
             await fetch(
                 "https://mychatbot-ct9m.onrender.com/api/parent/children/" +
                 encodeURIComponent(childId) +
@@ -2588,7 +2600,36 @@ async function loadChildConversations() {
                             "Bearer " + idToken
                     }
                 }
-            );
+            );*/
+
+        let conversationUrl;
+
+if (currentMode === "parent") {
+
+    conversationUrl =
+        "https://mychatbot-ct9m.onrender.com/api/parent/conversations";
+
+} else {
+
+    conversationUrl =
+        "https://mychatbot-ct9m.onrender.com/api/parent/children/" +
+        encodeURIComponent(childId) +
+        "/conversations";
+
+}
+
+const response =
+    await fetch(
+        conversationUrl,
+        {
+            method: "GET",
+
+            headers: {
+                "Authorization":
+                    "Bearer " + idToken
+            }
+        }
+    );
 
         const data =
             await response.json();
