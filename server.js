@@ -940,6 +940,84 @@ app.post(
   }
 );
 
+// ========================================
+// GET AIWOLF CONVERSATIONS
+// FOR THE SIGNED-IN PARENT
+// ========================================
+
+app.get(
+  "/api/parent/conversations",
+  requireFirebaseUser,
+  async (req, res) => {
+
+    try {
+
+      const parentUid =
+        req.firebaseUser.uid;
+
+
+      // ------------------------------------
+      // PARENT CONVERSATION COLLECTION
+      // ------------------------------------
+
+      const snapshot =
+        await db
+          .collection("parents")
+          .doc(parentUid)
+          .collection("parentConversations")
+          .orderBy("createdAt", "desc")
+          .get();
+
+
+      // ------------------------------------
+      // CONVERT FIRESTORE DOCUMENTS
+      // TO JSON
+      // ------------------------------------
+
+      const conversations =
+        snapshot.docs.map(doc => ({
+
+          id:
+            doc.id,
+
+          ...doc.data()
+
+        }));
+
+
+      // ------------------------------------
+      // SUCCESS
+      // ------------------------------------
+
+      return res.json({
+
+        ok: true,
+
+        conversations
+
+      });
+
+
+    } catch (error) {
+
+      console.error(
+        "Get parent AIWolf conversations error:",
+        error
+      );
+
+
+      return res.status(500).json({
+
+        error:
+          "Could not load the parent conversation history."
+
+      });
+
+    }
+
+  }
+);
+
 // GET AIWOLF CONVERSATIONS FOR ONE CHILD
 app.get(
   "/api/parent/children/:childId/conversations",
