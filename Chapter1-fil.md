@@ -1,4 +1,4 @@
-<img src="../bakit_bata.png" style="width: 100%; max-width: 300px; height: auto;">
+<img src="bakit_bata.png" style="width: 100%; max-width: 300px; height: auto;">
 
 ### Pinakamatalinong Tanong na Maaaring Itanong ng Isang Bata
 
