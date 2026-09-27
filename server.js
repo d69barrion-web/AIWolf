@@ -1234,47 +1234,11 @@ app.post(
     }
 
     // ------------------------------------
-// CHILD ID
-// ------------------------------------
-
-/*if (!childId || typeof childId !== "string") {
-  return res.status(400).json({
-    error: "Child ID is required.",
-    remaining: rateLimit.remaining
-  });
-}*/
-
-    // ------------------------------------
     // MODE
     // ------------------------------------
 
     const selectedMode =
       mode === "parent" ? "parent" : "child";
-
-    // ------------------------------------
-    // LOAD RECENT CONVERSATION HISTORY
-    // ------------------------------------
-
-/*const parentUid =
-  req.firebaseUser.uid;
-
-const childRef =
-  db
-    .collection("parents")
-    .doc(parentUid)
-    .collection("children")
-    .doc(childId);
-
-// Make sure the child belongs to this parent.
-const childSnapshot =
-  await childRef.get();
-
-if (!childSnapshot.exists) {
-  return res.status(404).json({
-    error: "Child profile not found.",
-    remaining: rateLimit.remaining
-  });
-}*/
 
 // ------------------------------------
 // AIWOLF CREDIT CHECK
@@ -1330,28 +1294,7 @@ if (usedCredits >= creditLimit) {
 
 }
 
-/*// Get recent conversations for this child.
-const conversationSnapshot =
-  await childRef
-    .collection("conversations")
-    .orderBy("createdAt", "desc")
-    .limit(20)
-    .get();
-
-// Keep only conversations from the current chapter.
-const currentChapterNumber =
-  Number(chapter);
-
-const conversationHistory =
-  conversationSnapshot.docs
-    .map(doc => doc.data())
-    .filter(item =>
-      Number(item.chapter) === currentChapterNumber
-    )
-    .slice(0, 10)
-    .reverse();*/
-
-    // ------------------------------------
+// ------------------------------------
 // LOAD CONVERSATION HISTORY
 // ------------------------------------
 
@@ -1450,32 +1393,7 @@ else {
       .reverse();
 }
     
-    // ------------------------------------
-    // TEST MODE
-    // ------------------------------------
-
-   /* if (AIWOLF_TEST_MODE) {
-
-      return res.json({
-  reply:
-    `🐺 AIWolf TEST MODE\n\n` +
-    `Request accepted!\n\n` +
-    `Chapter: ${chapter || "Unknown"}\n` +
-    `Mode: ${selectedMode}\n` +
-    `Child ID: ${childId}\n` +
-    `Previous conversations loaded: ${conversationHistory.length}\n\n` +
-    `Hindi muna ako tatawag sa OpenAI API dahil naka-TEST MODE tayo.\n\n` +
-    `Remaining requests: ${rateLimit.remaining}`,
-
-  remaining:
-    rateLimit.remaining,
-
-  testMode:
-    true
-});
-    }*/
-
-    // ------------------------------------
+// ------------------------------------
 // TEST MODE
 // ------------------------------------
 
