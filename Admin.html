@@ -482,6 +482,69 @@ auth.onAuthStateChanged(
     }
 );
 
+    let parentAuth = null;
+let parentDb = null;
+
+function loadAIWolfCredits() {
+
+    if (!parentDb || !parentAuth) return;
+
+    const user = parentAuth.currentUser;
+
+    if (!user) return;
+
+    const uid = user.uid;
+
+    parentDb
+        .collection("users")
+        .doc(uid)
+        .onSnapshot(
+            function (snapshot) {
+
+                if (!snapshot.exists) {
+                    return;
+                }
+
+                const data = snapshot.data();
+
+                const creditLimit =
+                    Number(data.creditLimit || 0);
+
+                const usedCredits =
+                    Number(data.usedCredits || 0);
+
+                const remainingCredits =
+                    Math.max(
+                        0,
+                        creditLimit - usedCredits
+                    );
+
+                document.getElementById(
+                    "aiWolfStartingCredits"
+                ).textContent =
+                    "$" + creditLimit.toFixed(2);
+
+                document.getElementById(
+                    "aiWolfTotalCost"
+                ).textContent =
+                    "$" + usedCredits.toFixed(4);
+
+                document.getElementById(
+                    "aiWolfRemainingCredits"
+                ).textContent =
+                    "$" + remainingCredits.toFixed(2);
+
+            },
+            function (error) {
+
+                alert(
+                    "AIWolf Credits Error:\n\n" +
+                    error.message
+                );
+
+            }
+        );
+}
 
 // ========================================
 // SIGN IN
