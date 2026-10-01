@@ -1647,12 +1647,347 @@ app.post(
 
         remainingCredits:
           Math.max(
+// ========================================
+// ADMIN — SET USER CREDIT LIMIT
+// ========================================
+
+app.post(
+  "/api/admin/users/:uid/credits",
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const targetUid =
+        req.params.uid;
+
+      const creditLimit =
+        Number(
+          req.body.creditLimit
+        );
+
+      if (
+        !Number.isFinite(creditLimit) ||
+        creditLimit < 0
+      ) {
+
+        return res.status(400).json({
+          error:
+            "Invalid credit limit."
+        });
+
+      }
+
+      // Make sure the Firebase account exists.
+      await firebaseAuth.getUser(
+        targetUid
+      );
+
+      const creditRef =
+        db
+          .collection("users")
+          .doc(targetUid);
+
+      const usageRef =
+        db
+          .collection("_aiwolf")
+          .doc("usage");
+
+      // Handle the allocation change inside one Firestore
+      // transaction so simultaneous requests cannot spend
+      // the same AvailableToAllocate.
+      const result = await db.runTransaction(
+        async (transaction) => {
+
+          // IMPORTANT:
+          // All reads happen before any writes.
+          const usersSnapshot =
+            await transaction.get(
+              db.collection("users")
+            );
+
+          const usageSnapshot =
+            await transaction.get(
+              usageRef
+            );
+
+          const targetSnapshot =
+            usersSnapshot.docs.find(
+              (doc) => doc.id === targetUid
+            );
+
+          const existingData =
+            targetSnapshot
+              ? (targetSnapshot.data() || {})
+              : {};
+
+          const oldCreditLimit =
+            Number(
+              existingData.creditLimit || 0
+            );
+
+          const usedCredits =
+            Number(
+              existingData.usedCredits || 0
+            );
+
+          // Calculate Total Allocated Credits from the
+          // actual user accounts.
+          //
+          // IMPORTANT:
+          // This includes the Admin account too.
+          let totalAllocatedCredits = 0;
+
+          usersSnapshot.docs.forEach((doc) => {
+
+            const data =
+              doc.data() || {};
+
+            const amount =
+              Number(
+                data.creditLimit || 0
+              );
+
+            if (
+              Number.isFinite(amount) &&
+              amount > 0
+            ) {
+              totalAllocatedCredits +=
+                amount;
+            }
+
+          });
+
+          const allocationChange =
+            creditLimit -
+            oldCreditLimit;
+
+          const availableBeforeChange =
+            Math.max(
+              0,
+              AIWOLF_STARTING_CREDITS -
+              totalAllocatedCredits
+            );
+
+          // Increasing an allocation consumes only the
+          // currently unallocated credits.
+          if (
+            allocationChange >
+            availableBeforeChange
+          ) {
+
+            const usageData =
+              usageSnapshot.exists
+                ? usageSnapshot.data() || {}
+                : {};
+
+            const actualAIWolfCost =
+              Number(
+                usageData.totalCost || 0
+              );
+
+            throw new Error(
+              JSON.stringify({
+                code:
+                  "INSUFFICIENT_AVAILABLE_CREDITS",
+
+                availableToAllocate:
+                  availableBeforeChange,
+
+                requestedAdditionalCredits:
+                  allocationChange,
+
+                totalAllocatedCredits,
+
+                actualAIWolfCost
+              })
+            );
+
+          }
+
+          const newTotalAllocatedCredits =
+            totalAllocatedCredits +
+            allocationChange;
+
+          const finalAvailableToAllocate =
+            Math.max(
+              0,
+              AIWOLF_STARTING_CREDITS -
+              newTotalAllocatedCredits
+            );
+
+          const now =
+            new Date().toISOString();
+
+          // Save the user's new allocation.
+          //
+          // usedCredits is preserved because it represents
+          // actual historical AIWolf usage.
+          transaction.set(
+            creditRef,
+            {
+              creditLimit,
+
+              usedCredits,
+
+              updatedAt:
+                now,
+
+              updatedBy:
+                req.firebaseUser.uid
+            },
+            {
+              merge: true
+            }
+          );
+
+          const usageData =
+            usageSnapshot.exists
+              ? usageSnapshot.data() || {}
+              : {};
+
+          // IMPORTANT:
+          //
+          // Actual AIWolf Cost is NOT deducted from
+          // AvailableToAllocate.
+          //
+          // They are separate accounting metrics.
+          transaction.set(
+            usageRef,
+            {
+              startingCredits:
+                AIWOLF_STARTING_CREDITS,
+
+              totalAllocatedCredits:
+                newTotalAllocatedCredits,
+
+              availableToAllocate:
+                finalAvailableToAllocate,
+
+              // Preserve actual AIWolf cost.
+              totalCost:
+                Number(
+                  usageData.totalCost || 0
+                ),
+
+              updatedAt:
+                now
+            },
+            {
+              merge: true
+            }
+          );
+
+          return {
+
+            previousCreditLimit:
+              oldCreditLimit,
+
+            usedCredits,
+
+            allocationChange,
+
+            totalAllocatedCredits:
+              newTotalAllocatedCredits,
+
+            availableToAllocate:
+              finalAvailableToAllocate,
+
+            totalCost:
+              Number(
+                usageData.totalCost || 0
+              )
+          };
+
+        }
+      );
+
+      return res.json({
+
+        ok: true,
+
+        uid:
+          targetUid,
+
+        creditLimit,
+
+        usedCredits:
+          result.usedCredits,
+
+        previousCreditLimit:
+          result.previousCreditLimit,
+
+        allocationChange:
+          result.allocationChange,
+
+        totalAllocatedCredits:
+          result.totalAllocatedCredits,
+
+        availableToAllocate:
+          result.availableToAllocate,
+
+        actualAIWolfCost:
+          result.totalCost,
+
+        remainingCredits:
+          Math.max(
             0,
-            creditLimit - usedCredits
+            creditLimit -
+            result.usedCredits
           )
+
       });
 
     } catch (error) {
+
+      // Expected error when the central pool does not
+      // have enough unallocated credits.
+      if (
+        error &&
+        error.message
+      ) {
+
+        try {
+
+          const details =
+            JSON.parse(
+              error.message
+            );
+
+          if (
+            details.code ===
+            "INSUFFICIENT_AVAILABLE_CREDITS"
+          ) {
+
+            return res.status(400).json({
+
+              error:
+                "Not enough AIWolf credits available to allocate.",
+
+              message:
+                "Hindi sapat ang AvailableToAllocate para sa bagong allocation.",
+
+              availableToAllocate:
+                details.availableToAllocate,
+
+              requestedAdditionalCredits:
+                details.requestedAdditionalCredits,
+
+              totalAllocatedCredits:
+                details.totalAllocatedCredits,
+
+              actualAIWolfCost:
+                details.actualAIWolfCost
+
+            });
+
+          }
+
+        } catch (_) {
+          // Not our structured allocation error.
+        }
+
+      }
 
       console.error(
         "Admin set credits error:",
@@ -1665,7 +2000,6 @@ app.post(
       });
 
     }
-
   }
 );
 
