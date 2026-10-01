@@ -1572,7 +1572,7 @@ res.json({
 // ========================================
 
 app.post(
-  "/api/admin/users/:uid/credits",
+  "/api/admin/credits",
   requireAdmin,
   async (req, res) => {
 
