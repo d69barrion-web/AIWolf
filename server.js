@@ -1201,6 +1201,171 @@ app.get(
 );
 
 // ========================================
+// ADMIN — AIWOLF CREDIT POOL SUMMARY
+// ========================================
+
+async function syncAIWolfAllocationLedger() {
+
+  const usersSnapshot =
+    await db
+      .collection("users")
+      .get();
+
+  let totalAllocatedCredits = 0;
+
+  usersSnapshot.docs.forEach((doc) => {
+
+    const data =
+      doc.data() || {};
+
+    const creditLimit =
+      Number(data.creditLimit || 0);
+
+    if (
+      Number.isFinite(creditLimit) &&
+      creditLimit > 0
+    ) {
+      totalAllocatedCredits += creditLimit;
+    }
+
+  });
+
+  const availableToAllocate =
+    Math.max(
+      0,
+      AIWOLF_STARTING_CREDITS -
+      totalAllocatedCredits
+    );
+
+  const usageRef =
+    db
+      .collection("_aiwolf")
+      .doc("usage");
+
+  await usageRef.set(
+    {
+      startingCredits:
+        AIWOLF_STARTING_CREDITS,
+
+      totalAllocatedCredits,
+
+      availableToAllocate,
+
+      updatedAt:
+        new Date().toISOString()
+    },
+    {
+      merge: true
+    }
+  );
+
+  return {
+    totalAllocatedCredits,
+    availableToAllocate
+  };
+}
+
+
+// ========================================
+// GET AIWOLF CREDIT POOL
+// ========================================
+
+app.get(
+  "/api/admin/credits",
+  requireAdmin,
+  async (req, res) => {
+
+    try {
+
+      const allocation =
+        await syncAIWolfAllocationLedger();
+
+      const usageSnapshot =
+        await db
+          .collection("_aiwolf")
+          .doc("usage")
+          .get();
+
+      const usageData =
+        usageSnapshot.exists
+          ? usageSnapshot.data() || {}
+          : {};
+
+      const totalCost =
+        Number(
+          usageData.totalCost || 0
+        );
+
+      const totalInputTokens =
+        Number(
+          usageData.totalInputTokens || 0
+        );
+
+      const totalOutputTokens =
+        Number(
+          usageData.totalOutputTokens || 0
+        );
+
+      const totalTokens =
+        Number(
+          usageData.totalTokens || 0
+        );
+
+      return res.json({
+
+        ok: true,
+
+        startingCredits:
+          AIWOLF_STARTING_CREDITS,
+
+        totalAllocatedCredits:
+          allocation.totalAllocatedCredits,
+
+        availableToAllocate:
+          allocation.availableToAllocate,
+
+        // Actual OpenAI cost is a SEPARATE metric.
+        actualAIWolfCost:
+          totalCost,
+
+        estimatedRemainingCredits:
+          Math.max(
+            0,
+            AIWOLF_STARTING_CREDITS -
+            totalCost
+          ),
+
+        totalInputTokens,
+
+        totalOutputTokens,
+
+        totalTokens,
+
+        updatedAt:
+          usageData.updatedAt || null
+
+      });
+
+    } catch (error) {
+
+      console.error(
+        "Admin credit pool error:",
+        error
+      );
+
+      return res.status(500).json({
+
+        error:
+          "Could not load AIWolf credit pool."
+
+      });
+
+    }
+
+  }
+);
+
+// ========================================
 // AIWOLF API
 // ========================================
 
