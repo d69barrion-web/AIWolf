@@ -58,14 +58,15 @@ conclusion: Tamsulosin's action;
 Tamsulosint taken: 4 capsules;
 penis discomfort: ✔️
 
-8:57~4:00 = 800cc @114mL/h
-4:00~10:00= 800cc @133mL/h
-10:00~3:52= 600cc+@100mL/h
-3:52~1:00 = 600cc @67mL/h
-1:00~7:56 = 600cc @86mL/h
-7:56~11:31= 500cc @125mL/h
-11:31~4:36= 400cc+@80mL/h
-4:36~10:38= 1000cc@166mL/h
+8:57p~4:00a  = 800cc |@114mL/h
+4:00a~10:00a = 800cc |@133mL/h
+10:00a~3:52p = 600cc+|@100mL/h
+3:52p~1:00a  = 600cc |@ 67mL/h
+1:00a~7:56a  = 600cc |@ 86mL/h
+7:56a~11:31a = 500cc |@125mL/h
+11:31a~4:36p = 400cc+|@ 80mL/h
+4:36p~10:38p = 1000cc|@166mL/h
+10:38p~3:27a = 1000cc|@200mL/h
 
 
 
